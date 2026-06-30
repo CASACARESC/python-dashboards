@@ -1,7 +1,8 @@
-# app.py — API Flask para o Dashboard de Protocolos
-# Dependências: pip install flask flask-cors oracledb
+# app.py — API Flask + servidor do Dashboard de Protocolos
+# Dependências: pip install flask flask-cors oracledb python-dotenv gunicorn
+# Produção: gunicorn -w 4 -b 0.0.0.0:3001 app:app
 
-from flask import Flask, jsonify, request
+from flask import Flask, jsonify, request, send_from_directory
 from flask_cors import CORS
 import oracledb
 import os
@@ -27,6 +28,12 @@ VIEW_NAME = os.getenv("VIEW_NAME", "VW_PROTOCOLO_DASHBOARD")
 def get_conn():
     # Modo thin: não precisa do Oracle Instant Client instalado!
     return oracledb.connect(**DB_CONFIG)
+
+
+# ── DASHBOARD ────────────────────────────────────────────
+@app.route("/")
+def index():
+    return send_from_directory(os.path.dirname(os.path.abspath(__file__)), "dashboard.html")
 
 
 # ── ROTA PRINCIPAL ───────────────────────────────────────

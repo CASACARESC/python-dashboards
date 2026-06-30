@@ -312,8 +312,8 @@ footer{text-align:center;padding:16px;color:var(--muted);font-size:11px;border-t
     <p>Defina o endereço da sua API Python (Flask ou FastAPI) conectada ao Oracle</p>
     <div class="modal-field">
       <label>URL base da API</label>
-      <input type="text" id="cfgApiUrl" placeholder="http://localhost:3001">
-      <div class="cfg-hint">Ex: http://192.168.1.10:3001 · https://api.empresa.com</div>
+      <input type="text" id="cfgApiUrl" placeholder="(vazio = mesmo servidor)">
+      <div class="cfg-hint">Vazio = URL relativa (recomendado) · ou http://192.168.1.10:3001</div>
     </div>
     <div class="cfg-row">
       <div class="modal-field">
@@ -344,10 +344,10 @@ footer{text-align:center;padding:16px;color:var(--muted);font-size:11px;border-t
 // CONFIGURAÇÃO DA API
 // ═══════════════════════════════════════════════════════
 let API_CFG = {
-  baseUrl:     'http://localhost:3001',
+  baseUrl:     '',               // vazio = mesmo servidor (URL relativa)
   path:        '/api/protocolos',
-  autoRefresh: 0,      // minutos (0 = desativado)
-  mode:        'api', // 'api' ou 'demo'
+  autoRefresh: 0,                // minutos (0 = desativado)
+  mode:        'api',            // 'api' ou 'demo'
 };
 let autoRefreshTimer = null;
 let lastRefresh = null;
@@ -512,7 +512,7 @@ function showError(msg) {
       <h3>Erro ao conectar à API</h3>
       <p>${msg}<br><br>
         Verifique se a API Python está rodando em<br>
-        <code>${API_CFG.baseUrl}</code>
+        <code>${API_CFG.baseUrl || window.location.origin}</code>
       </p>
       <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap">
         <button class="btn-retry" onclick="loadData()">🔄 Tentar novamente</button>

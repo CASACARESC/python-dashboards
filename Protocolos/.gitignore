@@ -1,0 +1,18 @@
+# Credenciais — nunca commitar
+.env
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.venv/
+venv/
+env/
+*.egg-info/
+dist/
+build/
+
+# Arquivos gerados (versão estática)
+dados_raw.json
+dashboard_estatico.html
