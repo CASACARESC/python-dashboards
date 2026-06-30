@@ -190,6 +190,12 @@ footer{text-align:center;padding:16px;color:var(--muted);font-size:11px;border-t
 @media(max-width:700px){.kpi-grid{grid-template-columns:repeat(2,1fr)}}
 @keyframes fadeUp{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
 .kpi-card,.chart-card{animation:fadeUp .4s ease both}
+.toast{position:fixed;bottom:24px;right:24px;background:rgba(0,198,255,.12);border:1px solid rgba(0,198,255,.35);color:var(--accent);padding:10px 16px;border-radius:8px;font-size:12px;z-index:9999;animation:toastIn .3s ease;pointer-events:none;max-width:360px}
+.toast.out{animation:toastOut .3s ease forwards}
+@keyframes toastIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+@keyframes toastOut{from{opacity:1}to{opacity:0;transform:translateY(8px)}}
+.ms-wrap.ms-new .ms-trigger{border-color:var(--accent4)!important;animation:newPulse 1s ease 3}
+@keyframes newPulse{0%,100%{box-shadow:none}50%{box-shadow:0 0 8px rgba(16,185,129,.5)}}
 </style>
 </head>
 <body>
@@ -433,6 +439,12 @@ async function loadData(isRefresh=false) {
     lastRefresh  = new Date();
     updateRefreshTime();
 
+    // Salva opções antigas para detectar novos valores no auto-refresh
+    const prevOpts = {};
+    if (isRefresh) {
+      FILTER_KEYS.forEach(k => { prevOpts[k] = new Set(FILTER_OPTIONS[k] || []); });
+    }
+
     // Reconstrói opções de filtro a partir dos dados reais
     FILTER_KEYS.forEach(k => {
       FILTER_OPTIONS[k] = [...new Set(rows.map(r=>r[k]).filter(Boolean))].sort();
@@ -446,6 +458,23 @@ async function loadData(isRefresh=false) {
     if (isFirstLoad) {
       buildFilterBar();
       initDefaultCharts();
+    } else {
+      // Atualiza contagens e opções dos filtros sem destruir seleções do usuário
+      const novos = [];
+      FILTER_CFG.forEach(({key, label}) => {
+        const opts = FILTER_OPTIONS[key] || [];
+        const listDiv = document.getElementById('mslist_' + key);
+        if (!listDiv) return;
+        const hasNew = isRefresh && opts.some(v => !prevOpts[key]?.has(v));
+        renderMsList(key, opts, listDiv, '');
+        updateTrigLabel(key, opts.length);
+        if (hasNew) {
+          novos.push(label);
+          const wrap = listDiv.closest('.ms-wrap');
+          if (wrap) { wrap.classList.add('ms-new'); setTimeout(() => wrap.classList.remove('ms-new'), 5000); }
+        }
+      });
+      if (novos.length) showToast('Novos valores detectados em: ' + novos.join(', '));
     }
 
     updateTags(); updateKPIs(); redrawAllCharts();
@@ -486,6 +515,14 @@ function updateRefreshTime() {
   const h = lastRefresh.getHours().toString().padStart(2,'0');
   const m = lastRefresh.getMinutes().toString().padStart(2,'0');
   el.textContent = `Atualizado às ${h}:${m}` + (API_CFG.autoRefresh>0 ? ` · auto ${API_CFG.autoRefresh}min` : '');
+}
+
+function showToast(msg) {
+  const t = document.createElement('div');
+  t.className = 'toast';
+  t.textContent = msg;
+  document.body.appendChild(t);
+  setTimeout(() => { t.classList.add('out'); setTimeout(() => t.remove(), 300); }, 4500);
 }
 
 // ═══════════════════════════════════════════════════════
@@ -668,7 +705,7 @@ function buildMS(key,label,opts){
   const ba=document.createElement('button');ba.textContent='Marcar todos';
   const bc=document.createElement('button');bc.textContent='Limpar';
   ac.append(ba,bc);dd.appendChild(ac);
-  const listDiv=document.createElement('div');listDiv.className='ms-list';dd.appendChild(listDiv);
+  const listDiv=document.createElement('div');listDiv.className='ms-list';listDiv.id='mslist_'+key;dd.appendChild(listDiv);
   wrap.appendChild(dd);
   renderMsList(key,opts,listDiv,'');
   ba.onclick=e=>{e.stopPropagation();opts.forEach(v=>sel[key].add(v));listDiv.querySelectorAll('.ms-cb').forEach(c=>c.checked=true);updateTrigLabel(key,opts.length);applyFilters();};
