@@ -1,0 +1,1663 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dashboard de Autorizações</title>
+<link rel="icon" href="data:,">
+<script src="/plotly.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0a0e1a;--surface:#111827;--surface2:#1a2235;--border:#1e2d45;
+  --accent:#00c6ff;--accent2:#7b5ea7;--accent3:#f59e0b;--accent4:#10b981;
+  --accent5:#f97316;--text:#e2e8f0;--muted:#64748b;--danger:#ef4444;
+}
+[data-theme="light"]{
+  --bg:#f0f4f8;--surface:#ffffff;--surface2:#e8eef5;--border:#d1dce8;
+  --accent:#0077cc;--accent2:#6d4c9e;--accent3:#d97706;--accent4:#059669;
+  --accent5:#ea580c;--text:#1a2535;--muted:#64748b;--danger:#dc2626;
+}
+body{background:var(--bg);color:var(--text);font-family:'Sora',sans-serif;min-height:100vh;transition:background .3s,color .3s}
+
+/* LOADING — apenas banner topo, não bloqueia a tela */
+.loading-bar{position:fixed;top:0;left:0;right:0;height:3px;background:var(--border);z-index:999;transition:opacity .4s}
+.loading-bar::after{content:'';display:block;height:100%;background:var(--accent);animation:loadbar 1.4s ease-in-out infinite}
+.loading-bar.hide{opacity:0;pointer-events:none}
+@keyframes loadbar{0%{width:0;margin-left:0}50%{width:60%;margin-left:20%}100%{width:0;margin-left:100%}}
+
+/* Skeleton para KPI enquanto carrega */
+.kpi-skeleton .kpi-value{background:var(--border);border-radius:6px;color:transparent;animation:shimmer 1.2s infinite}
+@keyframes shimmer{0%,100%{opacity:.4}50%{opacity:.9}}
+
+/* Spinner pequeno dentro do card */
+.chart-spinner{height:260px;display:flex;align-items:center;justify-content:center}
+.chart-spinner::after{content:'';width:32px;height:32px;border:2px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+.error-box{background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.3);border-radius:14px;padding:32px 40px;text-align:center;max-width:480px}
+.error-box h3{font-size:16px;font-weight:700;color:var(--danger);margin-bottom:8px}
+.error-box pre{font-size:11px;color:var(--muted);font-family:'Space Mono',monospace;margin-top:10px;white-space:pre-wrap;text-align:left;max-height:120px;overflow:auto}
+.btn-retry{margin-top:16px;padding:8px 24px;border-radius:8px;border:1px solid var(--accent);background:transparent;color:var(--accent);font-family:'Sora',sans-serif;font-size:13px;cursor:pointer}
+.page-error{padding:20px 28px}
+.page-error .error-box{max-width:100%}
+
+/* HEADER */
+header{padding:20px 28px 12px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px}
+.header-left h1{font-size:20px;font-weight:700}
+.header-left h1 span{color:var(--accent)}
+.header-left p{font-size:11px;color:var(--muted);margin-top:3px;font-family:'Space Mono',monospace}
+.badge{display:inline-flex;align-items:center;gap:6px;border-radius:20px;padding:4px 12px;font-size:11px;border:1px solid rgba(16,185,129,.3);color:var(--accent4);background:rgba(16,185,129,.08)}
+.badge::before{content:'';width:6px;height:6px;border-radius:50%;background:var(--accent4);animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+
+/* THEME TOGGLE */
+.theme-btn{background:transparent;border:1px solid var(--border);border-radius:20px;padding:5px 12px;cursor:pointer;font-size:16px;line-height:1;color:var(--text);transition:border-color .2s,background .2s}
+.theme-btn:hover{border-color:var(--accent);background:var(--surface2)}
+
+/* FILTROS RÁPIDOS (data) */
+.filters-bar{padding:10px 28px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;border-bottom:1px solid var(--border);background:var(--surface)}
+.fg{display:flex;align-items:center;gap:6px}
+.fg label{font-size:12px;color:var(--muted)}
+.fg input{background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:6px 10px;color:var(--text);font-size:13px;font-family:'Sora',sans-serif;outline:none;width:138px}
+.fg input:focus{border-color:var(--accent)}
+.btn{padding:7px 16px;border-radius:8px;font-family:'Sora',sans-serif;font-size:13px;cursor:pointer;border:1px solid transparent}
+.btn-primary{background:var(--accent);color:#0a0e1a;font-weight:600;border-color:var(--accent)}
+.btn-primary:hover{opacity:.85}
+.btn-ghost{background:transparent;color:var(--muted);border-color:var(--border)}
+.btn-ghost:hover{border-color:var(--text);color:var(--text)}
+.btn-outline{background:transparent;border-color:var(--border);color:var(--muted)}
+.btn-outline:hover{border-color:var(--accent);color:var(--accent)}
+.total-info{margin-left:auto;font-size:12px;color:var(--muted);font-family:'Space Mono',monospace}
+.total-info strong{color:var(--accent)}
+
+/* PAINEL FILTROS AVANÇADOS */
+.adv-toggle{display:flex;align-items:center;gap:8px;padding:8px 28px;border-bottom:1px solid var(--border);cursor:pointer;user-select:none;background:var(--surface2)}
+.adv-toggle:hover{background:#1e2a3e}
+.adv-toggle-label{font-size:12px;color:var(--muted)}
+.adv-toggle-icon{font-size:12px;color:var(--muted);transition:transform .2s}
+.adv-toggle-icon.open{transform:rotate(90deg)}
+.active-filters-count{margin-left:auto;font-size:11px;background:rgba(0,198,255,.15);color:var(--accent);border-radius:10px;padding:2px 8px;display:none}
+.active-filters-count.visible{display:inline}
+
+.adv-panel{background:var(--surface2);border-bottom:1px solid var(--border);padding:16px 28px;display:none}
+.adv-panel.open{display:block}
+.adv-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:14px;margin-bottom:14px}
+.adv-actions{display:flex;gap:8px;align-items:center}
+.active-badge{font-size:11px;color:var(--muted);font-family:'Space Mono',monospace;margin-left:auto}
+.active-badge strong{color:var(--accent)}
+
+/* WIDGET DE FILTRO */
+.fw-wrap{position:relative}
+.fw-label{font-size:11px;color:var(--muted);margin-bottom:5px;display:flex;align-items:center;justify-content:space-between}
+.fw-label span{font-size:10px;color:var(--accent);cursor:pointer}
+.fw-label span:hover{text-decoration:underline}
+
+/* Multi-select */
+.fw-trigger{width:100%;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:7px 10px;color:var(--text);font-size:12px;font-family:'Sora',sans-serif;cursor:pointer;text-align:left;display:flex;align-items:center;justify-content:space-between;gap:6px}
+.fw-trigger:hover,.fw-trigger.open{border-color:var(--accent)}
+.fw-trigger .fw-count{background:var(--accent);color:#0a0e1a;border-radius:10px;padding:1px 7px;font-size:10px;font-weight:700;min-width:20px;text-align:center}
+.fw-trigger .fw-count.none{background:var(--border);color:var(--muted)}
+.fw-trigger .fw-arrow{font-size:10px;color:var(--muted);flex-shrink:0}
+
+.fw-dropdown{position:absolute;top:calc(100% + 4px);left:0;right:0;background:var(--surface);border:1px solid var(--accent);border-radius:10px;z-index:200;box-shadow:0 8px 32px rgba(0,0,0,.5);overflow:hidden;min-width:220px}
+.fw-search{padding:8px}
+.fw-search input{width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:6px 10px;color:var(--text);font-size:12px;font-family:'Sora',sans-serif;outline:none}
+.fw-search input:focus{border-color:var(--accent)}
+.fw-list{max-height:200px;overflow-y:auto;padding:4px 0}
+.fw-list::-webkit-scrollbar{width:4px}
+.fw-list::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
+.fw-item{display:flex;align-items:center;gap:8px;padding:6px 12px;cursor:pointer;font-size:12px;transition:background .1s}
+.fw-item:hover{background:var(--surface2)}
+.fw-item input[type=checkbox]{accent-color:var(--accent);width:13px;height:13px;flex-shrink:0}
+.fw-item-label{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.fw-item-count{font-size:10px;color:var(--muted);font-family:'Space Mono',monospace;flex-shrink:0}
+.fw-empty{padding:12px;text-align:center;font-size:12px;color:var(--muted);font-family:'Space Mono',monospace}
+.fw-loading{padding:12px;text-align:center;font-size:12px;color:var(--muted)}
+.fw-footer{padding:6px 8px;border-top:1px solid var(--border);display:flex;gap:6px}
+.fw-foot-btn{flex:1;padding:5px;border-radius:6px;border:1px solid var(--border);background:transparent;color:var(--muted);font-size:11px;font-family:'Sora',sans-serif;cursor:pointer}
+.fw-foot-btn:hover{border-color:var(--accent);color:var(--accent)}
+
+/* Filtro de Incidência */
+.inc-row{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:12px 14px;margin-bottom:14px}
+.inc-row-header{font-size:11px;color:var(--muted);margin-bottom:10px;display:flex;align-items:center;gap:8px}
+.inc-row-header b{font-size:12px;color:var(--text)}
+.inc-row-header .inc-clear{margin-left:auto;font-size:10px;color:var(--accent);cursor:pointer}
+.inc-row-header .inc-clear:hover{text-decoration:underline}
+.inc-controls{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.inc-lbl{font-size:12px;color:var(--muted);white-space:nowrap}
+.inc-input{background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:6px 8px;color:var(--text);font-size:12px;font-family:'Sora',sans-serif;outline:none}
+.inc-input:focus{border-color:var(--accent)}
+.inc-badge{display:none;font-size:11px;color:var(--accent);background:rgba(0,198,255,.12);border-radius:6px;padding:2px 8px}
+.inc-badge.on{display:inline}
+
+/* Range filter */
+.fw-range{display:flex;gap:6px}
+.fw-range input{flex:1;min-width:0;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:7px 8px;color:var(--text);font-size:12px;font-family:'Sora',sans-serif;outline:none}
+.fw-range input:focus{border-color:var(--accent)}
+
+/* Text filter */
+.fw-text input{width:100%;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:7px 10px;color:var(--text);font-size:12px;font-family:'Sora',sans-serif;outline:none}
+.fw-text input:focus{border-color:var(--accent)}
+
+/* KPIS */
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(165px,1fr));gap:12px;padding:18px 28px}
+.kpi{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:15px 17px;position:relative;overflow:hidden}
+.kpi::after{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:var(--kpi-color,var(--accent))}
+.kpi-label{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:7px}
+.kpi-value{font-size:24px;font-weight:700;font-family:'Space Mono',monospace;color:var(--kpi-color,var(--accent))}
+.kpi-sub{font-size:11px;color:var(--muted);margin-top:3px}
+
+/* CHARTS */
+.charts-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;padding:0 28px 28px}
+.chart-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden}
+.chart-card.full{grid-column:1/-1}
+.card-header{display:flex;align-items:center;gap:8px;padding:13px 14px 0;flex-wrap:wrap}
+.card-title{font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;flex:1;min-width:80px}
+.card-controls{display:flex;align-items:center;gap:4px;flex-wrap:wrap}
+.ctrl-select{background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:11px;font-family:'Sora',sans-serif;padding:4px 7px;cursor:pointer;outline:none}
+.ctrl-select:focus{border-color:var(--accent)}
+.ctrl-btn{padding:4px 9px;border-radius:6px;border:1px solid var(--border);background:transparent;color:var(--muted);font-size:11px;font-family:'Sora',sans-serif;cursor:pointer;transition:all .15s;white-space:nowrap}
+.ctrl-btn:hover{border-color:var(--accent);color:var(--accent)}
+.ctrl-btn.active{border-color:var(--accent);color:var(--accent);background:rgba(0,198,255,.08)}
+.ctrl-btn.danger:hover{border-color:var(--danger);color:var(--danger)}
+.chart-body{padding:10px 14px 14px}
+.chart-wrap{width:100%}
+.no-data{height:240px;display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:12px;font-family:'Space Mono',monospace}
+
+/* TABELA INCIDÊNCIA */
+#incTableSection{padding:0 28px}
+#incTable th{background:var(--surface2);color:var(--muted);font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.5px;padding:8px 12px;text-align:left;border-bottom:1px solid var(--border);white-space:nowrap}
+#incTable td{padding:7px 12px;border-bottom:1px solid rgba(255,255,255,.04);color:var(--text);vertical-align:top}
+#incTable tbody tr:hover td{background:rgba(0,198,255,.04)}
+#incTable tbody tr:nth-child(even) td{background:rgba(255,255,255,.015)}
+
+/* ADD CHART */
+.add-chart-row{padding:0 28px 32px}
+.btn-add-chart{display:flex;align-items:center;gap:10px;padding:13px 28px;border-radius:12px;border:2px dashed var(--border);background:transparent;color:var(--muted);font-family:'Sora',sans-serif;font-size:13px;cursor:pointer;transition:all .2s;width:100%;justify-content:center}
+.btn-add-chart:hover{border-color:var(--accent);color:var(--accent);background:rgba(0,198,255,.04)}
+
+/* MODAL */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.72);z-index:500;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(4px);opacity:0;pointer-events:none;transition:opacity .25s}
+.modal-overlay.open{opacity:1;pointer-events:all}
+.modal{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:26px;width:100%;max-width:460px;transform:translateY(20px);transition:transform .25s}
+.modal-overlay.open .modal{transform:translateY(0)}
+.modal h2{font-size:15px;font-weight:700;margin-bottom:18px}
+.modal h2 span{color:var(--accent)}
+.form-row{margin-bottom:13px}
+.form-row label{display:block;font-size:12px;color:var(--muted);margin-bottom:5px}
+.form-row select,.form-row input{width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:13px;font-family:'Sora',sans-serif;padding:8px 11px;outline:none}
+.form-row select:focus,.form-row input:focus{border-color:var(--accent)}
+.form-hint{font-size:11px;color:var(--muted);margin-top:3px}
+.modal-actions{display:flex;gap:10px;margin-top:18px;justify-content:flex-end}
+
+@media(max-width:860px){
+  .charts-grid{grid-template-columns:1fr}
+  .chart-card.full{grid-column:1}
+  .adv-grid{grid-template-columns:1fr 1fr}
+}
+</style>
+</head>
+<body>
+
+<div class="loading-bar" id="loadingBar"></div>
+
+<!-- HEADER -->
+<header>
+  <div class="header-left">
+    <h1>Dashboard <span>Autorizações</span></h1>
+    <p>benner_saude.vw_autorizacao_geral</p>
+  </div>
+  <div style="display:flex;align-items:center;gap:10px">
+    <button class="theme-btn" id="themeBtn" onclick="toggleTheme()" title="Alternar tema">🌙</button>
+    <div class="badge" id="statusBadge">Carregando</div>
+    <button class="btn btn-ghost" onclick="logout()" title="Sair" style="font-size:12px;padding:5px 12px">Sair</button>
+  </div>
+</header>
+
+<!-- FILTRO DE DATA -->
+<div class="filters-bar">
+  <div class="fg"><label>De</label><input type="month" id="dateFrom"></div>
+  <div class="fg"><label>Até</label><input type="month" id="dateTo"></div>
+  <button class="btn btn-primary" onclick="applyAll()">Filtrar</button>
+  <button class="btn btn-ghost"   onclick="clearAll()">Limpar tudo</button>
+  <button class="btn btn-outline" id="btnRefresh" onclick="loadData()">⟳ Atualizar dados</button>
+  <button class="btn btn-outline" id="btnExport" onclick="exportDashboard()">↓ Exportar HTML</button>
+  <select class="ctrl-select" id="autoRefreshSel" onchange="setAutoRefresh(this.value)" title="Atualização automática">
+    <option value="0">Auto: Off</option>
+    <option value="300">A cada 5 min</option>
+    <option value="600">A cada 10 min</option>
+  </select>
+  <span class="total-info" id="totalInfo"></span>
+</div>
+
+<!-- TOGGLE FILTROS AVANÇADOS -->
+<div class="adv-toggle" onclick="toggleAdvPanel()">
+  <span class="adv-toggle-icon" id="advIcon">▶</span>
+  <span class="adv-toggle-label">Filtros avançados por coluna</span>
+  <span class="active-filters-count" id="activeCount"></span>
+</div>
+
+<!-- PAINEL FILTROS AVANÇADOS -->
+<div class="adv-panel" id="advPanel">
+  <div class="adv-grid" id="advGrid">
+    <!-- widgets gerados pelo JS -->
+  </div>
+  <!-- FILTRO DE INCIDÊNCIA -->
+  <div class="inc-row">
+    <div class="inc-row-header">
+      <b>Filtro de Incidência</b>
+      <span style="font-size:10px;color:var(--muted)">Registros onde um item se repete N vezes em X dias</span>
+      <span class="inc-badge" id="incBadge">ativo</span>
+      <span class="inc-clear" onclick="clearIncFilter()">Limpar</span>
+    </div>
+    <div class="inc-controls">
+      <span class="inc-lbl">Coluna</span>
+      <select class="ctrl-select inc-input" id="incCol" style="min-width:160px" onchange="onIncChange()">
+        <option value="">— selecione —</option>
+        <option value="codigo do item">Código do Item</option>
+        <option value="Tipo guia">Tipo de Guia</option>
+        <option value="TIPO ATENDIMENTO">Tipo de Atendimento</option>
+        <option value="cidade da execução">Cidade de Execução</option>
+        <option value="descrição do evento">Descrição do Evento</option>
+      </select>
+      <span class="inc-lbl">≥</span>
+      <input type="number" class="inc-input" id="incMin" min="1" max="9999" placeholder="Qtd" style="width:72px" oninput="onIncChange()">
+      <span class="inc-lbl">ocorrências em</span>
+      <input type="number" class="inc-input" id="incDays" min="1" max="365" placeholder="Dias" style="width:72px" oninput="onIncChange()">
+      <span class="inc-lbl">dias</span>
+      <label style="display:flex;align-items:center;gap:5px;font-size:12px;color:var(--muted);cursor:pointer;user-select:none">
+        <input type="checkbox" id="incPerBene" style="accent-color:var(--accent)" onchange="onIncChange()">
+        por beneficiário
+      </label>
+    </div>
+  </div>
+
+  <div class="adv-actions">
+    <button class="btn btn-primary" onclick="applyAll()">Aplicar filtros</button>
+    <button class="btn btn-ghost"   onclick="clearAdvFilters()">Limpar filtros</button>
+    <span class="active-badge" id="advActiveBadge"></span>
+  </div>
+</div>
+
+<!-- KPIS -->
+<div class="kpis">
+  <div class="kpi" style="--kpi-color:var(--accent)">
+    <div class="kpi-label">Total de Registros</div>
+    <div class="kpi-value" id="kpiTotal">—</div>
+    <div class="kpi-sub">autorizações</div>
+  </div>
+  <div class="kpi" style="--kpi-color:var(--accent4)">
+    <div class="kpi-label">SADT</div>
+    <div class="kpi-value" id="kpiSADT">—</div>
+    <div class="kpi-sub" id="kpiSADTPct"></div>
+  </div>
+  <div class="kpi" style="--kpi-color:var(--accent2)">
+    <div class="kpi-label">Consultas</div>
+    <div class="kpi-value" id="kpiConsulta">—</div>
+    <div class="kpi-sub" id="kpiConsultaPct"></div>
+  </div>
+  <div class="kpi" style="--kpi-color:var(--accent3)">
+    <div class="kpi-label">Internações</div>
+    <div class="kpi-value" id="kpiInternacao">—</div>
+    <div class="kpi-sub" id="kpiInternacaoPct"></div>
+  </div>
+  <div class="kpi" style="--kpi-color:var(--accent5)">
+    <div class="kpi-label">Outros Tipos</div>
+    <div class="kpi-value" id="kpiOutros">—</div>
+    <div class="kpi-sub" id="kpiOutrosPct"></div>
+  </div>
+</div>
+
+<!-- CHARTS -->
+<div class="charts-grid" id="chartsGrid"></div>
+
+<!-- TABELA DE INCIDÊNCIA -->
+<div id="incTableSection" style="display:none;margin:18px 0 8px">
+  <div style="display:flex;align-items:center;gap:12px;margin-bottom:10px">
+    <span style="font-size:13px;font-weight:700;color:var(--accent)">Registros por Beneficiário — Filtro de Incidência</span>
+    <span id="incTableCount" style="font-size:11px;color:var(--muted)"></span>
+  </div>
+  <div style="overflow-x:auto;border-radius:8px;border:1px solid var(--border)">
+    <table id="incTable" style="width:100%;border-collapse:collapse;font-size:12px">
+      <thead id="incTableHead"></thead>
+      <tbody id="incTableBody">
+        <tr><td colspan="7" style="text-align:center;padding:20px;color:var(--muted)">
+          <div class="chart-spinner"></div>
+        </td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div class="add-chart-row">
+  <button class="btn-add-chart" onclick="openModal()">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/>
+    </svg>
+    Adicionar novo gráfico
+  </button>
+</div>
+
+<!-- MODAL NOVO GRÁFICO -->
+<div class="modal-overlay" id="modalOverlay" onclick="closeModalOutside(event)">
+  <div class="modal">
+    <h2>Novo <span>Gráfico</span></h2>
+    <div class="form-row">
+      <label>Título</label>
+      <input type="text" id="newChartTitle" placeholder="Ex: Top Cidades">
+    </div>
+    <div class="form-row">
+      <label>Coluna para agrupar</label>
+      <select id="newChartCol"></select>
+      <div class="form-hint">Colunas disponíveis na view</div>
+    </div>
+    <div class="form-row">
+      <label>Tipo de gráfico</label>
+      <select id="newChartType">
+        <option value="bar">Barras verticais</option>
+        <option value="barh" selected>Barras horizontais</option>
+        <option value="pie">Pizza</option>
+        <option value="donut">Rosca (donut)</option>
+        <option value="line">Linha</option>
+      </select>
+    </div>
+    <div class="form-row">
+      <label>Top N valores</label>
+      <select id="newChartTop">
+        <option value="5">Top 5</option>
+        <option value="10" selected>Top 10</option>
+        <option value="15">Top 15</option>
+        <option value="20">Top 20</option>
+        <option value="50">Top 50</option>
+      </select>
+    </div>
+    <div class="form-row">
+      <label>Largura</label>
+      <select id="newChartFull">
+        <option value="false">Metade da tela</option>
+        <option value="true">Tela cheia</option>
+      </select>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost"    onclick="closeModal()">Cancelar</button>
+      <button class="btn btn-primary"  id="btnModalAdd" onclick="addChart()">Adicionar</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ── AUTH ───────────────────────────────────────────────── */
+if (!sessionStorage.getItem("auth_token")) {
+  window.location.replace("/login");
+  throw new Error("redirect");
+}
+function authHeaders() {
+  return {"X-Token": sessionStorage.getItem("auth_token") || ""};
+}
+function logout() {
+  sessionStorage.removeItem("auth_token");
+  window.location.replace("/login");
+}
+
+const API = window.location.origin;
+
+/* ── PALETA ─────────────────────────────────────────────── */
+const COLORS = [
+  "#00c6ff","#10b981","#7b5ea7","#f59e0b","#f97316",
+  "#ef4444","#06b6d4","#a78bfa","#34d399","#fb923c",
+  "#e879f9","#4ade80","#facc15","#60a5fa","#f87171",
+  "#818cf8","#2dd4bf","#fbbf24","#c084fc","#38bdf8"
+];
+
+function getLAY() {
+  const isLight = document.documentElement.getAttribute("data-theme") === "light";
+  const fc = isLight ? "#1a2535" : "#e2e8f0";
+  const gc = isLight ? "#d1dce8" : "#1e2d45";
+  const hb = isLight ? "#ffffff" : "#111827";
+  return {
+    paper_bgcolor:"transparent", plot_bgcolor:"transparent",
+    font:{family:"Sora,sans-serif",color:fc,size:12},
+    margin:{t:10,r:20,b:50,l:50},
+    xaxis:{gridcolor:gc,linecolor:gc,tickfont:{size:11}},
+    yaxis:{gridcolor:gc,linecolor:gc,tickfont:{size:11}},
+    legend:{bgcolor:"transparent",font:{size:11}},
+    hoverlabel:{bgcolor:hb,bordercolor:gc,font:{family:"Sora",size:12}},
+  };
+}
+const LAY = {}; // kept for backwards compat, use getLAY() in renderChart
+const CFG = {displaylogo:false,responsive:true,
+  modeBarButtonsToRemove:["select2d","lasso2d","autoScale2d"]};
+
+/* ── ESTADO ─────────────────────────────────────────────── */
+let chartDefs   = [];
+let schemaCache = [];
+let cardCounter = 0;
+
+// Estado dos filtros: {colName: {type, loaded, allItems, selected, min, max, text}}
+const filterState = {};
+
+// Estado do filtro de incidência
+const incState = {col:null, min:null, days:null, perBene:false, active:false};
+
+// Definições das colunas filtráveis
+const FILTER_COLS = [
+  { col: "Tipo guia",             type: "list",  label: "Tipo de Guia" },
+  { col: "TIPO ATENDIMENTO",      type: "list",  label: "Tipo de Atendimento" },
+  { col: "cidade da execução",    type: "list",  label: "Cidade de Execução" },
+  { col: "codigo do item",        type: "list",  label: "Código do Item" },
+  { col: "descrição do evento",   type: "list",  label: "Descrição do Evento" },
+  { col: "Nome Beneficiario",     type: "text",  label: "Beneficiário" },
+  { col: "IDADE",                 type: "range", label: "Faixa Etária (Idade)" },
+];
+
+/* ── HELPERS ─────────────────────────────────────────────── */
+const fmt  = n  => n==null ? "—" : Number(n).toLocaleString("pt-BR");
+const pct  = (p,t) => t ? (p/t*100).toFixed(1)+"% do total" : "";
+const col  = i => COLORS[i % COLORS.length];
+const lay  = extra => ({...getLAY(),...extra});
+
+function buildFiltersParam() {
+  const arr = [];
+  for (const {col: c, type} of FILTER_COLS) {
+    const st = filterState[c];
+    if (!st) continue;
+    if (type === "list" && st.selected?.size > 0)
+      arr.push({col: c, type: "list", vals: [...st.selected]});
+    else if (type === "range" && (st.min || st.max))
+      arr.push({col: c, type: "range", min: st.min||null, max: st.max||null});
+    else if (type === "text" && st.text)
+      arr.push({col: c, type: "text", val: st.text});
+  }
+  if (incState.active)
+    arr.push({type:"incidence", col:incState.col, min:incState.min, days:incState.days, perBene:incState.perBene});
+  return arr.length ? JSON.stringify(arr) : null;
+}
+
+function countActiveFilters() {
+  let n = 0;
+  for (const {col: c, type} of FILTER_COLS) {
+    const st = filterState[c];
+    if (!st) continue;
+    if (type === "list"  && st.selected?.size > 0) n++;
+    if (type === "range" && (st.min || st.max))    n++;
+    if (type === "text"  && st.text)               n++;
+  }
+  if (incState.active) n++;
+  return n;
+}
+
+function updateActiveFilterBadge() {
+  const n   = countActiveFilters();
+  const el  = document.getElementById("activeCount");
+  const adv = document.getElementById("advActiveBadge");
+  if (n > 0) {
+    el.textContent = `${n} filtro${n>1?"s":""} ativo${n>1?"s":""}`;
+    el.classList.add("visible");
+    adv.innerHTML  = `<strong>${n}</strong> filtro${n>1?"s":""} ativo${n>1?"s":""}`;
+  } else {
+    el.classList.remove("visible");
+    adv.innerHTML  = "";
+  }
+}
+
+/* ── PAINEL FILTROS AVANÇADOS ────────────────────────────── */
+function toggleAdvPanel() {
+  const panel = document.getElementById("advPanel");
+  const icon  = document.getElementById("advIcon");
+  panel.classList.toggle("open");
+  icon.classList.toggle("open");
+  if (panel.classList.contains("open")) buildFilterWidgets();
+}
+
+function buildFilterWidgets() {
+  const grid = document.getElementById("advGrid");
+  if (grid.childElementCount > 0) return; // já foi construído
+
+  for (const fd of FILTER_COLS) {
+    if (!filterState[fd.col]) filterState[fd.col] = {loaded:false, selected:new Set()};
+    const wrap = document.createElement("div");
+    wrap.className = "fw-wrap";
+    wrap.id        = `fw-${fd.col}`;
+
+    if (fd.type === "list") {
+      wrap.innerHTML = `
+        <div class="fw-label">
+          <b>${fd.label}</b>
+          <span onclick="clearOneFilter('${fd.col}')">Limpar</span>
+        </div>
+        <button class="fw-trigger" id="fwtrig-${fd.col}" onclick="toggleDropdown('${fd.col}')">
+          <span class="fw-trigger-text" id="fwtext-${fd.col}">Todos</span>
+          <span class="fw-count none" id="fwcount-${fd.col}">0</span>
+          <span class="fw-arrow">▼</span>
+        </button>
+        <div class="fw-dropdown" id="fwdrop-${fd.col}" style="display:none">
+          <div class="fw-search">
+            <input placeholder="Buscar..." oninput="filterSearch(this,'${fd.col}')">
+          </div>
+          <div class="fw-list" id="fwlist-${fd.col}">
+            <div class="fw-loading">Clique para carregar...</div>
+          </div>
+          <div class="fw-footer">
+            <button class="fw-foot-btn" onclick="selectAllFilter('${fd.col}')">Marcar todos</button>
+            <button class="fw-foot-btn" onclick="clearOneFilter('${fd.col}')">Desmarcar</button>
+          </div>
+        </div>`;
+    } else if (fd.type === "range") {
+      wrap.innerHTML = `
+        <div class="fw-label"><b>${fd.label}</b></div>
+        <div class="fw-range">
+          <input type="number" placeholder="Mín" id="fwmin-${fd.col}" min="0"
+            oninput="onRangeChange('${fd.col}')">
+          <input type="number" placeholder="Máx" id="fwmax-${fd.col}" min="0"
+            oninput="onRangeChange('${fd.col}')">
+        </div>`;
+    } else { // text
+      wrap.innerHTML = `
+        <div class="fw-label">
+          <b>${fd.label}</b>
+          <span onclick="clearOneFilter('${fd.col}')">Limpar</span>
+        </div>
+        <div class="fw-text">
+          <input type="text" placeholder="Buscar nome..." id="fwtxt-${fd.col}"
+            oninput="onTextChange('${fd.col}',this.value)">
+        </div>`;
+    }
+    grid.appendChild(wrap);
+  }
+
+  // Fecha dropdowns ao clicar fora
+  document.addEventListener("click", closeAllDropdowns);
+}
+
+async function toggleDropdown(col) {
+  const drop = document.getElementById(`fwdrop-${col}`);
+  const trig = document.getElementById(`fwtrig-${col}`);
+  const isOpen = drop.style.display !== "none";
+
+  // fecha todos
+  document.querySelectorAll(".fw-dropdown").forEach(d => d.style.display="none");
+  document.querySelectorAll(".fw-trigger").forEach(t => t.classList.remove("open"));
+
+  if (isOpen) return;
+
+  drop.style.display = "block";
+  trig.classList.add("open");
+
+  if (!filterState[col].loaded) {
+    await loadFilterValues(col);
+  }
+}
+
+function closeAllDropdowns(e) {
+  if (!e.target.closest(".fw-wrap")) {
+    document.querySelectorAll(".fw-dropdown").forEach(d => d.style.display="none");
+    document.querySelectorAll(".fw-trigger").forEach(t => t.classList.remove("open"));
+  }
+}
+
+async function loadFilterValues(col) {
+  const listEl = document.getElementById(`fwlist-${col}`);
+  if (!listEl) return;
+  listEl.innerHTML = `<div class="fw-loading">Carregando...</div>`;
+
+  try {
+    const r = await fetch(`${API}/api/filter-values?col=${encodeURIComponent(col)}`, {headers: authHeaders()});
+    const d = await r.json();
+    if (!d.success) { listEl.innerHTML=`<div class="fw-empty">Erro: ${d.error}</div>`; return; }
+
+    filterState[col].allItems = d.data;
+    filterState[col].loaded   = true;
+    renderFilterList(col, d.data);
+  } catch(e) {
+    listEl.innerHTML = `<div class="fw-empty">Erro de conexão</div>`;
+  }
+}
+
+function renderFilterList(col, items) {
+  const listEl = document.getElementById(`fwlist-${col}`);
+  if (!listEl) return;
+  const sel = filterState[col].selected;
+
+  if (!items.length) { listEl.innerHTML=`<div class="fw-empty">Sem valores</div>`; return; }
+
+  listEl.innerHTML = items.map(item => {
+    const v = item.val ?? "";
+    const checked = sel.has(v) ? "checked" : "";
+    return `<label class="fw-item">
+      <input type="checkbox" value="${v.replace(/"/g,'&quot;')}" ${checked}
+        onchange="onCheckChange('${col}',this)">
+      <span class="fw-item-label" title="${v}">${v||"(vazio)"}</span>
+      <span class="fw-item-count">${Number(item.qtd).toLocaleString("pt-BR")}</span>
+    </label>`;
+  }).join("");
+}
+
+function onCheckChange(col, cb) {
+  const v = cb.value;
+  const s = filterState[col].selected;
+  cb.checked ? s.add(v) : s.delete(v);
+  updateTriggerBadge(col);
+  updateActiveFilterBadge();
+}
+
+function updateTriggerBadge(col) {
+  const s     = filterState[col]?.selected;
+  const cnt   = s ? s.size : 0;
+  const badge = document.getElementById(`fwcount-${col}`);
+  const text  = document.getElementById(`fwtext-${col}`);
+  if (!badge) return;
+  badge.textContent = cnt;
+  badge.className   = `fw-count${cnt ? "" : " none"}`;
+  if (text) text.textContent = cnt === 0 ? "Todos" : cnt === 1 ? [...s][0] : `${cnt} selecionados`;
+}
+
+function filterSearch(input, col) {
+  const q     = input.value.toLowerCase();
+  const items = filterState[col]?.allItems || [];
+  renderFilterList(col, q ? items.filter(i=>(i.val||"").toLowerCase().includes(q)) : items);
+}
+
+function selectAllFilter(col) {
+  const items = filterState[col]?.allItems || [];
+  const s     = filterState[col].selected;
+  items.forEach(i => s.add(i.val));
+  if (filterState[col].loaded) renderFilterList(col, items);
+  updateTriggerBadge(col);
+  updateActiveFilterBadge();
+}
+
+function clearOneFilter(col) {
+  const st = filterState[col];
+  if (!st) return;
+  if (st.selected) st.selected.clear();
+  st.min = null; st.max = null; st.text = null;
+  updateTriggerBadge(col);
+  if (st.loaded) renderFilterList(col, st.allItems||[]);
+
+  const minEl = document.getElementById(`fwmin-${col}`);
+  const maxEl = document.getElementById(`fwmax-${col}`);
+  const txtEl = document.getElementById(`fwtxt-${col}`);
+  if (minEl) minEl.value = "";
+  if (maxEl) maxEl.value = "";
+  if (txtEl) txtEl.value = "";
+  updateActiveFilterBadge();
+}
+
+function clearAdvFilters() {
+  FILTER_COLS.forEach(fd => clearOneFilter(fd.col));
+  clearIncFilter();
+}
+
+function onIncChange() {
+  const col    = document.getElementById("incCol").value;
+  const min    = parseInt(document.getElementById("incMin").value);
+  const days   = parseInt(document.getElementById("incDays").value);
+  const perBene= document.getElementById("incPerBene").checked;
+  incState.col    = col || null;
+  incState.min    = isNaN(min)  ? null : min;
+  incState.days   = isNaN(days) ? null : days;
+  incState.perBene= perBene;
+  incState.active = !!(col && min >= 1 && days >= 1);
+  document.getElementById("incBadge").classList.toggle("on", incState.active);
+  updateActiveFilterBadge();
+}
+
+function clearIncFilter() {
+  incState.col = null; incState.min = null; incState.days = null;
+  incState.perBene = false; incState.active = false;
+  const c = document.getElementById("incCol");
+  const m = document.getElementById("incMin");
+  const d = document.getElementById("incDays");
+  const b = document.getElementById("incPerBene");
+  if (c) c.value = "";
+  if (m) m.value = "";
+  if (d) d.value = "";
+  if (b) b.checked = false;
+  const badge = document.getElementById("incBadge");
+  if (badge) badge.classList.remove("on");
+  updateActiveFilterBadge();
+}
+
+function onRangeChange(col) {
+  const min = document.getElementById(`fwmin-${col}`)?.value;
+  const max = document.getElementById(`fwmax-${col}`)?.value;
+  filterState[col].min = min || null;
+  filterState[col].max = max || null;
+  updateActiveFilterBadge();
+}
+
+function onTextChange(col, val) {
+  filterState[col].text = val.trim() || null;
+  updateActiveFilterBadge();
+}
+
+/* ── RENDER PLOTLY ─────────────────────────────────────── */
+function renderChart(el, def) {
+  const {type, showValues, labels, values, colorOffset=0} = def;
+  if (!labels?.length) { el.innerHTML=`<div class="no-data">Sem dados</div>`; return; }
+  const colors = labels.map((_,i) => col(i+colorOffset));
+  const isH=type==="barh", isPie=type==="pie"||type==="donut", isLine=type==="line";
+  let traces, layout;
+
+  Plotly.purge(el);
+  el.innerHTML = '';
+  if (isPie) {
+    traces=[{type:"pie",labels,values,marker:{colors},hole:type==="donut"?.4:0,
+      textinfo:showValues?"label+value+percent":"label+percent",
+      hovertemplate:"<b>%{label}</b><br>%{value:,} (%{percent})<extra></extra>",textfont:{size:11}}];
+    layout=lay({showlegend:true,legend:{orientation:"v",x:1.02,y:.5,font:{size:10}},margin:{t:10,r:130,b:20,l:20}});
+
+  } else if (isH) {
+    const lr=[...labels].reverse(), vr=[...values].reverse(), cr=[...colors].reverse();
+    traces=[{type:"bar",orientation:"h",x:vr,y:lr,marker:{color:cr},
+      text:showValues?vr.map(v=>v.toLocaleString("pt-BR")):undefined,
+      textposition:showValues?"auto":"none",textfont:{size:10},
+      hovertemplate:"<b>%{y}</b><br>%{x:,}<extra></extra>"}];
+    layout=lay({margin:{t:10,r:20,b:40,l:210},yaxis:{...getLAY().yaxis,automargin:true,tickfont:{size:10}}});
+
+  } else if (isLine) {
+    traces=[{type:"scatter",mode:showValues?"lines+markers+text":"lines+markers",x:labels,y:values,
+      fill:"tozeroy",fillcolor:"rgba(0,198,255,.12)",line:{color:"#00c6ff",width:2.5},
+      marker:{size:5,color:"#00c6ff"},
+      text:showValues?values.map(v=>v.toLocaleString("pt-BR")):undefined,
+      textposition:"top center",textfont:{size:10},
+      hovertemplate:"<b>%{x}</b><br>%{y:,}<extra></extra>"}];
+    layout=lay({margin:{t:20,r:20,b:60,l:70}});
+
+  } else {
+    traces=[{type:"bar",x:labels,y:values,marker:{color:colors,opacity:.85},
+      text:showValues?values.map(v=>v.toLocaleString("pt-BR")):undefined,
+      textposition:showValues?"auto":"none",textfont:{size:10},
+      hovertemplate:"<b>%{x}</b><br>%{y:,}<extra></extra>"}];
+    layout=lay({bargap:.25,margin:{t:10,r:20,b:70,l:60},xaxis:{...getLAY().xaxis,type:"category"}});
+  }
+  Plotly.newPlot(el, traces, layout, CFG);
+}
+
+/* ── CARDS ──────────────────────────────────────────────── */
+function createCard(def) {
+  const opts = [{v:"bar",l:"Barras verticais"},{v:"barh",l:"Barras horizontais"},
+    {v:"pie",l:"Pizza"},{v:"donut",l:"Rosca"},{v:"line",l:"Linha"}]
+    .map(o=>`<option value="${o.v}"${def.type===o.v?" selected":""}>${o.l}</option>`).join("");
+  const div = document.createElement("div");
+  div.className=`chart-card${def.full?" full":""}`;
+  div.id=`card-${def.id}`;
+  div.innerHTML=`
+    <div class="card-header">
+      <span class="card-title">${def.title}</span>
+      <div class="card-controls">
+        <select class="ctrl-select" onchange="changeType('${def.id}',this.value)">${opts}</select>
+        <button class="ctrl-btn${def.showValues?" active":""}" id="vals-${def.id}"
+          onclick="toggleValues('${def.id}')">Valores</button>
+        <button class="ctrl-btn" onclick="toggleWidth('${def.id}')">↔</button>
+        <button class="ctrl-btn danger" onclick="removeCard('${def.id}')">✕</button>
+      </div>
+    </div>
+    <div class="chart-body">
+      <div class="chart-wrap" id="chart-${def.id}" style="height:${def.height||290}px"></div>
+    </div>`;
+  return div;
+}
+
+function renderCard(def) {
+  const el=document.getElementById(`chart-${def.id}`);
+  if (el) renderChart(el,def);
+}
+function changeType(id,t){const d=chartDefs.find(d=>d.id===id);if(d){d.type=t;renderCard(d);}}
+function toggleValues(id){
+  const d=chartDefs.find(d=>d.id===id);if(!d)return;
+  d.showValues=!d.showValues;
+  document.getElementById(`vals-${id}`)?.classList.toggle("active",d.showValues);
+  renderCard(d);
+}
+function toggleWidth(id){
+  const card=document.getElementById(`card-${id}`);if(!card)return;
+  card.classList.toggle("full");
+  const d=chartDefs.find(d=>d.id===id);if(d)d.full=card.classList.contains("full");
+  setTimeout(()=>{const w=document.getElementById(`chart-${id}`);if(w)Plotly.relayout(w,{});},60);
+}
+function removeCard(id){
+  document.getElementById(`card-${id}`)?.remove();
+  chartDefs=chartDefs.filter(d=>d.id!==id);
+}
+
+/* ── DEFS INICIAIS ──────────────────────────────────────── */
+function buildInitialDefs(data) {
+  const defs=[];
+  if(data.por_mes?.length)
+    defs.push({id:`c${++cardCounter}`,title:"Autorizações por Mês",type:"bar",full:true,
+      showValues:false,labels:data.por_mes.map(r=>r.mes),values:data.por_mes.map(r=>r.qtd)});
+  if(data.por_tipo?.length)
+    defs.push({id:`c${++cardCounter}`,title:"Tipo de Guia",type:"donut",full:false,
+      showValues:false,labels:data.por_tipo.map(r=>r.tipo),values:data.por_tipo.map(r=>r.qtd)});
+  if(data.por_atendimento?.length)
+    defs.push({id:`c${++cardCounter}`,title:"Tipo de Atendimento",type:"pie",full:false,
+      showValues:false,labels:data.por_atendimento.map(r=>r.atendimento),
+      values:data.por_atendimento.map(r=>r.qtd),colorOffset:3});
+  if(data.por_cidade?.length)
+    defs.push({id:`c${++cardCounter}`,title:"Top 10 Cidades de Execução",type:"barh",full:true,
+      showValues:true,labels:data.por_cidade.map(r=>r.cidade),
+      values:data.por_cidade.map(r=>r.qtd),colorOffset:1});
+  if(data.por_codigo?.length)
+    defs.push({id:`c${++cardCounter}`,title:"Top 15 Códigos de Item",type:"barh",full:true,
+      showValues:true,labels:data.por_codigo.map(r=>r.codigo),
+      values:data.por_codigo.map(r=>r.qtd),colorOffset:5});
+  if(data.por_faixa_etaria?.length)
+    defs.push({id:`c${++cardCounter}`,title:"Distribuição por Faixa Etária",type:"bar",full:false,
+      showValues:true,labels:data.por_faixa_etaria.map(r=>r.faixa),
+      values:data.por_faixa_etaria.map(r=>r.qtd),colorOffset:2});
+  return defs;
+}
+
+function renderAllCards(){
+  const grid=document.getElementById("chartsGrid");
+  grid.innerHTML="";
+  for(const def of chartDefs){const c=createCard(def);grid.appendChild(c);renderCard(def);}
+}
+
+/* ── CARREGAMENTO PROGRESSIVO ───────────────────────────── */
+// Definições dos endpoints de cada gráfico fixo
+const CHART_ENDPOINTS = [
+  { id:"mes",         url:"/api/chart/mes",         title:"Autorizações por Mês",
+    type:"bar",  full:true,  showValues:false,
+    map: d => ({ labels:d.map(r=>r.MES),  values:d.map(r=>r.QTD) }) },
+  { id:"tipo",        url:"/api/chart/tipo",        title:"Tipo de Guia",
+    type:"donut",full:false, showValues:false,
+    map: d => ({ labels:d.map(r=>r.TIPO), values:d.map(r=>r.QTD) }) },
+  { id:"atendimento", url:"/api/chart/atendimento", title:"Tipo de Atendimento",
+    type:"pie",  full:false, showValues:false, colorOffset:3,
+    map: d => ({ labels:d.map(r=>r.ATEND),values:d.map(r=>r.QTD) }) },
+  { id:"cidade",      url:"/api/chart/cidade",      title:"Top 10 Cidades de Execução",
+    type:"barh", full:true,  showValues:true,  colorOffset:1,
+    map: d => ({ labels:d.map(r=>r.CIDADE),values:d.map(r=>r.QTD) }) },
+  { id:"codigo",      url:"/api/chart/codigo",      title:"Top 15 Códigos de Item",
+    type:"barh", full:true,  showValues:true,  colorOffset:5,
+    map: d => ({ labels:d.map(r=>r.CODIGO),values:d.map(r=>r.QTD) }) },
+  { id:"faixa",       url:"/api/chart/faixa",       title:"Distribuição por Faixa Etária",
+    type:"bar",  full:false, showValues:true,  colorOffset:2,
+    map: d => ({ labels:d.map(r=>r.FAIXA), values:d.map(r=>r.QTD) }) },
+];
+
+function buildParams() {
+  const dateFrom = document.getElementById("dateFrom").value;
+  const dateTo   = document.getElementById("dateTo").value;
+  const p = new URLSearchParams();
+  if (dateFrom) p.set("dateFrom", dateFrom);
+  if (dateTo)   p.set("dateTo",   dateTo);
+  const fp = buildFiltersParam();
+  if (fp)  p.set("filters", fp);
+  return p;
+}
+
+/* ── STATUS PANEL ───────────────────────────────────────── */
+const _status = {};
+let _statusRemoveTimer = null;
+
+function statusPanel() {
+  let el = document.getElementById("statusPanel");
+  if (!el) {
+    el = document.createElement("div");
+    el.id = "statusPanel";
+    el.style.cssText = `position:fixed;bottom:16px;right:16px;z-index:900;
+      background:#111827;border:1px solid #1e2d45;border-radius:12px;
+      padding:12px 16px;font-family:'Space Mono',monospace;font-size:11px;
+      color:#64748b;min-width:220px;box-shadow:0 8px 32px rgba(0,0,0,.5);
+      transition:opacity .4s`;
+    document.body.appendChild(el);
+  }
+  return el;
+}
+
+function setStatus(key, state, label) {
+  _status[key] = {state, label};
+  const icons = {loading:"⟳", ok:"✓", error:"✗"};
+  const colors = {loading:"#f59e0b", ok:"#10b981", error:"#ef4444"};
+  const rows = Object.entries(_status).map(([k,v]) =>
+    `<div style="display:flex;gap:8px;align-items:center;margin:2px 0">
+      <span style="color:${colors[v.state]};font-size:13px">${icons[v.state]}</span>
+      <span style="color:${v.state==="ok"?"#e2e8f0":v.state==="error"?"#ef4444":"#94a3b8"}">${v.label}</span>
+    </div>`
+  ).join("");
+  const allDone = Object.values(_status).every(v => v.state !== "loading");
+  const panel = statusPanel();
+  panel.style.opacity = allDone ? "0" : "1";
+  panel.style.pointerEvents = allDone ? "none" : "all";
+  panel.innerHTML = `<div style="color:#00c6ff;margin-bottom:8px;font-size:10px;letter-spacing:.5px">STATUS DE CARREGAMENTO</div>${rows}`;
+  clearTimeout(_statusRemoveTimer);
+  if (allDone) _statusRemoveTimer = setTimeout(() => panel.remove(), 1200);
+}
+
+async function fetchWithTimeout(url, ms=120000) {
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), ms);
+  try {
+    const r = await fetch(url, {signal: ctrl.signal, headers: authHeaders()});
+    clearTimeout(timer);
+    return r;
+  } catch(e) {
+    clearTimeout(timer);
+    throw e.name === "AbortError" ? new Error("Timeout (30s)") : e;
+  }
+}
+
+function showLoading()  { document.getElementById("loadingBar").classList.remove("hide"); }
+function hideLoading()  { document.getElementById("loadingBar").classList.add("hide"); }
+
+function showError(msg, detail) {
+  const grid = document.getElementById("chartsGrid");
+  grid.insertAdjacentHTML("beforebegin", `
+    <div class="page-error">
+      <div class="error-box">
+        <h3>Erro ao carregar dados</h3><p>${msg}</p>
+        ${detail?`<pre>${detail}</pre>`:""}
+        <button class="btn-retry" onclick="location.reload()">Tentar novamente</button>
+      </div>
+    </div>`);
+}
+
+async function loadData() {
+  showLoading();
+  Object.keys(_status).forEach(k => delete _status[k]);
+  const p = buildParams();
+
+  // 1. KPIs — rápido, mostra imediatamente
+  setStatus("kpi", "loading", "KPIs");
+  try {
+    const r    = await fetchWithTimeout(`${API}/api/kpis?${p}`);
+    const data = await r.json();
+    if (!data.success) {
+      const msg = data.error || data.detail?.error || (typeof data.detail === "string" ? data.detail : JSON.stringify(data.detail)) || "Erro desconhecido";
+      setStatus("kpi","error","KPIs"); showError(msg); hideLoading(); return;
+    }
+    setStatus("kpi", "ok", "KPIs");
+
+    const total = data.total || 0;
+    document.getElementById("kpiTotal").textContent    = fmt(total);
+    document.getElementById("totalInfo").innerHTML     = `Total: <strong>${fmt(total)}</strong> registros`;
+    document.getElementById("statusBadge").textContent = "Conectado";
+
+    let sadt=0, consulta=0, internacao=0, outros=0;
+    (data.por_tipo||[]).forEach(t => {
+      const l = String(t.tipo||"").toUpperCase();
+      if(l.includes("SADT"))        sadt       += t.qtd;
+      else if(l.includes("CONSUL")) consulta   += t.qtd;
+      else if(l.includes("INTERN")) internacao += t.qtd;
+      else                           outros     += t.qtd;
+    });
+    document.getElementById("kpiSADT").textContent         = fmt(sadt);
+    document.getElementById("kpiSADTPct").textContent      = pct(sadt,total);
+    document.getElementById("kpiConsulta").textContent     = fmt(consulta);
+    document.getElementById("kpiConsultaPct").textContent  = pct(consulta,total);
+    document.getElementById("kpiInternacao").textContent   = fmt(internacao);
+    document.getElementById("kpiInternacaoPct").textContent= pct(internacao,total);
+    document.getElementById("kpiOutros").textContent       = fmt(outros);
+    document.getElementById("kpiOutrosPct").textContent    = pct(outros,total);
+
+  } catch(e) { setStatus("kpi","error","KPIs: "+e.message); showError("Erro ao conectar (porta 3002).", e.message); hideLoading(); return; }
+
+  try {
+    // 2. Gráficos fixos — em paralelo, cada um atualiza ao chegar
+    rebuildStaticCards();  // cria cards com skeleton imediatamente
+
+    CHART_ENDPOINTS.forEach(ep => setStatus(ep.id, "loading", ep.title));
+    const staticFetches = CHART_ENDPOINTS.map(ep => loadChartEndpoint(ep, p));
+
+    // 3. Gráficos dinâmicos — recarrega em paralelo
+    const dynamicFetches = chartDefs.filter(d=>d.dynamic).map(def => loadDynamicCard(def, p));
+
+    // 4. Tabela de incidência — aparece só quando o filtro está ativo
+    const incSection = document.getElementById("incTableSection");
+    if (incState.active) {
+      incSection.style.display = "block";
+      document.getElementById("incTableBody").innerHTML =
+        `<tr><td colspan="7" style="text-align:center;padding:20px"><div class="chart-spinner"></div></td></tr>`;
+      loadIncidenceTable(p);
+    } else {
+      incSection.style.display = "none";
+    }
+
+    await Promise.allSettled([...staticFetches, ...dynamicFetches]);
+  } catch(e) {
+    showError("Erro ao renderizar gráficos.", e.message);
+  } finally {
+    hideLoading();
+  }
+}
+
+async function loadIncidenceTable(params) {
+  try {
+    const r    = await fetchWithTimeout(`${API}/api/rows?${params}&limit=2000`, 120000);
+    const data = await r.json();
+    if (!data.success) { renderIncTableError(data.error || "Erro"); return; }
+
+    const rows = data.rows || [];
+    document.getElementById("incTableCount").textContent =
+      `${fmt(rows.length)} registro${rows.length!==1?"s":""}${rows.length===2000?" (limite atingido)":""}`;
+
+    if (!rows.length) {
+      document.getElementById("incTableBody").innerHTML =
+        `<tr><td colspan="7" style="text-align:center;padding:20px;color:var(--muted)">Nenhum registro encontrado</td></tr>`;
+      return;
+    }
+
+    const cols = Object.keys(rows[0]);
+    const head = document.getElementById("incTableHead");
+    head.innerHTML = `<tr>${cols.map(c=>`<th>${c}</th>`).join("")}</tr>`;
+
+    const tbody = document.getElementById("incTableBody");
+    tbody.innerHTML = rows.map(row =>
+      `<tr>${cols.map(c => `<td>${row[c] ?? "—"}</td>`).join("")}</tr>`
+    ).join("");
+  } catch(e) {
+    renderIncTableError(e.message);
+  }
+}
+
+function renderIncTableError(msg) {
+  document.getElementById("incTableBody").innerHTML =
+    `<tr><td colspan="7" style="text-align:center;padding:20px;color:#ff6b6b">Erro: ${msg}</td></tr>`;
+}
+
+function rebuildStaticCards() {
+  const grid   = document.getElementById("chartsGrid");
+  const dynIds = new Set(chartDefs.filter(d=>d.dynamic).map(d=>d.id));
+
+  // Remove cards estáticos antigos, preserva dinâmicos
+  [...grid.children].forEach(c => {
+    const id = c.id.replace("card-","");
+    if (!dynIds.has(id)) c.remove();
+  });
+  chartDefs = chartDefs.filter(d => d.dynamic);
+
+  // Insere cards estáticos com spinner
+  for (const ep of CHART_ENDPOINTS) {
+    const def = { id:ep.id, title:ep.title, type:ep.type, full:ep.full,
+                  showValues:ep.showValues, colorOffset:ep.colorOffset||0,
+                  labels:[], values:[] };
+    chartDefs.unshift(def);
+    const card = createCard(def);
+    // Coloca antes dos dinâmicos (primeiro filho que seja dinâmico)
+    const firstDyn = [...grid.children].find(c => dynIds.has(c.id.replace("card-","")));
+    grid.insertBefore(card, firstDyn || null);
+    document.getElementById(`chart-${ep.id}`).innerHTML = `<div class="chart-spinner"></div>`;
+  }
+}
+
+async function loadChartEndpoint(ep, params) {
+  try {
+    const r    = await fetchWithTimeout(`${API}${ep.url}?${params}`);
+    const data = await r.json();
+    if (!data.success) {
+      const el = document.getElementById(`chart-${ep.id}`);
+      if (el) el.innerHTML = `<div class="no-data">Erro ao carregar</div>`;
+      setStatus(ep.id,"error",ep.title); return;
+    }
+    const mapped = ep.map(data.data || []);
+    const def = chartDefs.find(d => d.id === ep.id);
+    if (def) { Object.assign(def, mapped); renderCard(def); }
+    setStatus(ep.id,"ok",ep.title);
+  } catch(e) {
+    const el = document.getElementById(`chart-${ep.id}`);
+    if (el) el.innerHTML = `<div class="no-data">Erro: ${e.message}</div>`;
+    setStatus(ep.id,"error",ep.title+": "+e.message);
+  }
+}
+
+async function loadDynamicCard(def, params) {
+  const el = document.getElementById(`chart-${def.id}`);
+  if (el) el.innerHTML = `<div class="chart-spinner"></div>`;
+  try {
+    const p = new URLSearchParams(params);
+    p.set("col", def.col);
+    p.set("top", def.top || 20);
+    const r    = await fetch(`${API}/api/agg?${p}`, {headers: authHeaders()});
+    const data = await r.json();
+    if (!data.success) return;
+    def.labels = data.data.map(r => r.LABEL || r.label);
+    def.values = data.data.map(r => r.QTD   || r.qtd);
+    renderCard(def);
+  } catch(_) {}
+}
+
+function applyAll() {
+  for (const fd of FILTER_COLS) {
+    if (filterState[fd.col]) filterState[fd.col].loaded = false;
+  }
+  loadData();
+}
+
+function clearAll() {
+  document.getElementById("dateFrom").value = "";
+  document.getElementById("dateTo").value   = "";
+  clearAdvFilters();
+  loadData();
+}
+
+/* ── MODAL ──────────────────────────────────────────────── */
+async function openModal(){
+  if(!schemaCache.length){
+    try{const r=await fetch(`${API}/api/schema`,{headers:authHeaders()});const d=await r.json();schemaCache=d.columns||[];}
+    catch(e){alert("Erro: "+e.message);return;}
+  }
+  document.getElementById("newChartCol").innerHTML=
+    schemaCache.map(c=>`<option value="${c.COLUMN_NAME}">${c.COLUMN_NAME} (${c.DATA_TYPE})</option>`).join("");
+  document.getElementById("modalOverlay").classList.add("open");
+}
+function closeModal(){document.getElementById("modalOverlay").classList.remove("open");}
+function closeModalOutside(e){if(e.target===document.getElementById("modalOverlay"))closeModal();}
+
+async function addChart(){
+  const rawCol = document.getElementById("newChartCol").value;
+  const type   = document.getElementById("newChartType").value;
+  const top    = parseInt(document.getElementById("newChartTop").value);
+  const full   = document.getElementById("newChartFull").value === "true";
+  const title  = document.getElementById("newChartTitle").value.trim() || rawCol;
+  if (!rawCol) { alert("Selecione uma coluna."); return; }
+
+  const btn = document.getElementById("btnModalAdd");
+  btn.disabled = true; btn.textContent = "Carregando...";
+
+  const def = { id:`c${++cardCounter}`, title, type, full, showValues:true,
+    dynamic:true, col:rawCol, top, labels:[], values:[],
+    colorOffset: cardCounter % COLORS.length };
+  chartDefs.push(def);
+
+  const grid = document.getElementById("chartsGrid");
+  const card = createCard(def);
+  grid.appendChild(card);
+  closeModal();
+  document.getElementById("newChartTitle").value = "";
+  card.scrollIntoView({behavior:"smooth", block:"start"});
+
+  await loadDynamicCard(def, buildParams());
+
+  btn.disabled = false; btn.textContent = "Adicionar";
+}
+
+/* ── EXPORTAR HTML ──────────────────────────────────────── */
+async function exportDashboard() {
+  const btn = document.getElementById("btnExport");
+  const orig = btn.textContent;
+  btn.textContent = "Exportando…";
+  btn.disabled = true;
+
+  try {
+    // Cubo dimensional (todos os dados) + gráficos dinâmicos em paralelo
+    const dynamicDefs = chartDefs.filter(d => d.dynamic);
+    const dynPromises = dynamicDefs.map(def => {
+      const dp = new URLSearchParams();
+      dp.set("col", def.col); dp.set("top", def.top || 20);
+      return fetchWithTimeout(`${API}/api/agg?${dp}`).then(r => r.json()).catch(() => ({success:false,data:[]}));
+    });
+
+    const [cubeRes, ...dynReses] = await Promise.all([
+      fetchWithTimeout(`${API}/api/export/cube`).then(r => r.json()),
+      ...dynPromises
+    ]);
+    if (!cubeRes.success) {
+      const msg = cubeRes.error || cubeRes.detail?.error
+        || (typeof cubeRes.detail === "string" ? cubeRes.detail : JSON.stringify(cubeRes.detail))
+        || "Falha ao carregar cubo";
+      throw new Error(msg);
+    }
+
+    const dynamicData = {};
+    dynamicDefs.forEach((def, i) => { dynamicData[def.id] = dynReses[i].success ? (dynReses[i].data||[]) : []; });
+
+    const theme = document.documentElement.getAttribute("data-theme") || "dark";
+    const html  = buildExportHTML(cubeRes, dynamicData, theme);
+    const blob  = new Blob([html], {type:"text/html;charset=utf-8"});
+    const url   = URL.createObjectURL(blob);
+    const a     = document.createElement("a");
+    const date  = new Date().toISOString().slice(0, 10);
+    a.href      = url;
+    a.download  = `dashboard_autorizacoes_${date}.html`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+
+  } catch(e) {
+    alert("Erro ao exportar: " + e.message);
+  } finally {
+    btn.textContent = orig;
+    btn.disabled    = false;
+  }
+}
+
+function buildExportHTML(cubeRes, dynamicData, theme) {
+  const isLight   = theme === "light";
+  const exportedAt= new Date().toLocaleString("pt-BR");
+  const themeAttr = isLight ? ' data-theme="light"' : '';
+  const sunMoon   = isLight ? "🌙" : "☀️";
+  const css       = Array.from(document.querySelectorAll("style")).map(s => s.textContent).join("\n");
+  const colorsJson= JSON.stringify(COLORS);
+  const mainJson  = JSON.stringify(cubeRes.main  || []).replace(/<\/script>/gi, "<\\/script>");
+  const codesJson = JSON.stringify(cubeRes.codes || []).replace(/<\/script>/gi, "<\\/script>");
+  const dynDefs   = chartDefs.filter(d => d.dynamic).map(def => {
+    const data = dynamicData[def.id] || [];
+    return {id:def.id, title:def.title, type:def.type, full:def.full,
+      showValues:def.showValues, colorOffset:def.colorOffset||0,
+      labels:data.map(r => r.LABEL||r.label||""), values:data.map(r => r.QTD||r.qtd||0)};
+  });
+  const dynJson = JSON.stringify(dynDefs).replace(/<\/script>/gi, "<\\/script>");
+
+  return `<!DOCTYPE html>
+<html lang="pt-BR"${themeAttr}>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Dashboard Autorizações — ${exportedAt}</title>
+<link rel="icon" href="data:,">
+<script src="https://cdn.plot.ly/plotly-latest.min.js"><\/script>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+${css}
+.xnotice{background:rgba(0,198,255,.08);border:1px solid rgba(0,198,255,.2);border-radius:8px;
+  padding:8px 16px;font-size:11px;color:var(--muted);font-family:'Space Mono',monospace;
+  text-align:center;margin:0 28px 12px}.xnotice strong{color:var(--accent)}
+.xfilters{background:var(--card);border:1px solid var(--border);border-radius:12px;
+  margin:0 28px 16px;padding:14px 20px;display:flex;flex-wrap:wrap;gap:12px;align-items:flex-end}
+.xfilters label{font-size:11px;color:var(--muted);display:flex;flex-direction:column;gap:4px}
+.xfilters input[type=month]{background:var(--bg);border:1px solid var(--border);border-radius:6px;
+  color:var(--text);padding:5px 10px;font-size:12px;font-family:inherit}
+.xdd{position:relative}
+.xdd-btn{background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);
+  padding:6px 12px;font-size:12px;cursor:pointer;min-width:150px;text-align:left;
+  display:flex;justify-content:space-between;align-items:center;gap:6px}
+.xdd-btn:hover{border-color:var(--accent)}
+.xdd-badge{background:var(--accent);color:#000;border-radius:10px;font-size:10px;
+  padding:1px 6px;font-weight:700;min-width:16px;text-align:center}
+.xdd-panel{position:absolute;top:calc(100% + 4px);left:0;z-index:200;background:var(--card);
+  border:1px solid var(--border);border-radius:8px;min-width:230px;max-height:260px;
+  overflow-y:auto;padding:8px;box-shadow:0 8px 24px rgba(0,0,0,.4);display:none}
+.xdd-panel.open{display:block}
+.xdd-item{display:flex;align-items:center;gap:8px;padding:4px 6px;border-radius:4px;
+  cursor:pointer;font-size:12px}.xdd-item:hover{background:rgba(0,198,255,.08)}
+.xdd-item input{cursor:pointer}
+.xclear{background:transparent;border:1px solid var(--border);border-radius:6px;
+  color:var(--muted);padding:6px 14px;font-size:12px;cursor:pointer}
+.xclear:hover{border-color:var(--accent);color:var(--accent)}
+.snap-badge{font-size:10px;color:var(--muted);margin-left:8px;font-style:italic}
+</style>
+</head>
+<body>
+<div class="loading-bar hide"></div>
+<header>
+  <div class="header-left">
+    <h1>Dashboard <span>Autorizações</span></h1>
+    <p>benner_saude.vw_autorizacao_geral</p>
+  </div>
+  <div style="display:flex;align-items:center;gap:10px">
+    <button class="theme-btn" id="themeBtn" onclick="xToggleTheme()">${sunMoon}</button>
+    <div class="badge" style="animation:none">Exportado</div>
+  </div>
+</header>
+<div class="xnotice">
+  Exportado em <strong>${exportedAt}</strong>
+  &nbsp;|&nbsp; Todos os dados embutidos — filtrável offline
+</div>
+<div class="xfilters">
+  <label>De<input type="month" id="xFrom" onchange="xOnDate()"></label>
+  <label>Até<input type="month" id="xTo" onchange="xOnDate()"></label>
+  <div class="xdd">
+    <button class="xdd-btn" onclick="xToggleDd('tipo')">
+      <span>Tipo de Guia</span>
+      <span class="xdd-badge" id="xbadge-tipo" style="display:none"></span>
+      <span>▾</span>
+    </button>
+    <div class="xdd-panel" id="xpanel-tipo"></div>
+  </div>
+  <div class="xdd">
+    <button class="xdd-btn" onclick="xToggleDd('atend')">
+      <span>Tipo de Atend.</span>
+      <span class="xdd-badge" id="xbadge-atend" style="display:none"></span>
+      <span>▾</span>
+    </button>
+    <div class="xdd-panel" id="xpanel-atend"></div>
+  </div>
+  <div class="xdd">
+    <button class="xdd-btn" onclick="xToggleDd('cidade')">
+      <span>Cidade</span>
+      <span class="xdd-badge" id="xbadge-cidade" style="display:none"></span>
+      <span>▾</span>
+    </button>
+    <div class="xdd-panel" id="xpanel-cidade"></div>
+  </div>
+  <div class="xdd">
+    <button class="xdd-btn" onclick="xToggleDd('faixa')">
+      <span>Faixa Etária</span>
+      <span class="xdd-badge" id="xbadge-faixa" style="display:none"></span>
+      <span>▾</span>
+    </button>
+    <div class="xdd-panel" id="xpanel-faixa"></div>
+  </div>
+  <div class="xdd">
+    <button class="xdd-btn" onclick="xToggleDd('codigo')">
+      <span>Código do Item</span>
+      <span class="xdd-badge" id="xbadge-codigo" style="display:none"></span>
+      <span>▾</span>
+    </button>
+    <div class="xdd-panel" id="xpanel-codigo"></div>
+  </div>
+  <button class="xclear" onclick="xClear()">✕ Limpar filtros</button>
+</div>
+<div class="kpis">
+  <div class="kpi" style="--kpi-color:var(--accent)">
+    <div class="kpi-label">Total de Registros</div>
+    <div class="kpi-value" id="xkTotal">—</div>
+    <div class="kpi-sub">autorizações</div>
+  </div>
+  <div class="kpi" style="--kpi-color:var(--accent4)">
+    <div class="kpi-label">SADT</div>
+    <div class="kpi-value" id="xkSADT">—</div>
+    <div class="kpi-sub" id="xkSADTp"></div>
+  </div>
+  <div class="kpi" style="--kpi-color:var(--accent2)">
+    <div class="kpi-label">Consultas</div>
+    <div class="kpi-value" id="xkConsulta">—</div>
+    <div class="kpi-sub" id="xkConsultap"></div>
+  </div>
+  <div class="kpi" style="--kpi-color:var(--accent3)">
+    <div class="kpi-label">Internações</div>
+    <div class="kpi-value" id="xkInternacao">—</div>
+    <div class="kpi-sub" id="xkInternacaop"></div>
+  </div>
+  <div class="kpi" style="--kpi-color:var(--accent5)">
+    <div class="kpi-label">Outros</div>
+    <div class="kpi-value" id="xkOutros">—</div>
+    <div class="kpi-sub" id="xkOutrosp"></div>
+  </div>
+</div>
+<div class="charts-grid" id="chartsGrid"></div>
+<script>
+const COLORS=${colorsJson};
+const CUBE=${mainJson};
+const CODES=${codesJson};
+const DYN=${dynJson};
+
+
+/* ── helpers ── */
+var xFmt=function(n){return n==null?'--':Math.round(n).toLocaleString('pt-BR');};
+var xPct=function(n,t){return t?(n/t*100).toFixed(1)+'%':'';};
+var xCol=function(i){return COLORS[i%COLORS.length];};
+var FAIXA_ORD=['0-18','19-23','24-28','29-33','34-38','39-43','44-48','49-53','54-58','59+'];
+
+/* ── filter state ── */
+var XS={mesFrom:'',mesTo:'',tipo:new Set(),atend:new Set(),cidade:new Set(),faixa:new Set(),codigo:new Set()};
+
+function xFiltMain(){
+  return CUBE.filter(function(r){
+    if(XS.mesFrom&&r.MES<XS.mesFrom)return false;
+    if(XS.mesTo&&r.MES>XS.mesTo)return false;
+    if(XS.tipo.size&&!XS.tipo.has(r.TIPO))return false;
+    if(XS.atend.size&&!XS.atend.has(r.ATEND))return false;
+    if(XS.cidade.size&&!XS.cidade.has(r.CIDADE))return false;
+    if(XS.faixa.size&&!XS.faixa.has(r.FAIXA))return false;
+    return true;
+  });
+}
+function xFiltCodes(){
+  return CODES.filter(function(r){
+    if(XS.mesFrom&&r.MES<XS.mesFrom)return false;
+    if(XS.mesTo&&r.MES>XS.mesTo)return false;
+    if(XS.tipo.size&&!XS.tipo.has(r.TIPO))return false;
+    if(XS.atend.size&&!XS.atend.has(r.ATEND))return false;
+    if(XS.codigo.size&&!XS.codigo.has(r.CODIGO))return false;
+    return true;
+  });
+}
+
+/* ── aggregation ── */
+function xGroup(rows,key,topN,sortKey){
+  var m={};
+  for(var i=0;i<rows.length;i++){var k=rows[i][key];m[k]=(m[k]||0)+rows[i].QTD;}
+  var e=Object.entries(m);
+  e.sort(sortKey?function(a,b){return a[0]<b[0]?-1:1;}:function(a,b){return b[1]-a[1];});
+  if(topN)e=e.slice(0,topN);
+  return{labels:e.map(function(x){return x[0];}),values:e.map(function(x){return x[1];})};
+}
+function xGroupFaixa(rows){
+  var m={};
+  for(var i=0;i<rows.length;i++)m[rows[i].FAIXA]=(m[rows[i].FAIXA]||0)+rows[i].QTD;
+  var e=FAIXA_ORD.filter(function(k){return k in m;}).map(function(k){return[k,m[k]];});
+  return{labels:e.map(function(x){return x[0];}),values:e.map(function(x){return x[1];})};
+}
+
+/* ── chart specs ── */
+var SPECS=[
+  {id:'mes',    title:'Autorizações por Mês',         type:'bar',  full:true, sv:false,co:0,gd:function(){return xGroup(xFiltMain(),'MES',0,true);}},
+  {id:'tipo',   title:'Tipo de Guia',                 type:'donut',full:false,sv:false,co:0,gd:function(){return xGroup(xFiltMain(),'TIPO',15,false);}},
+  {id:'atend',  title:'Tipo de Atendimento',          type:'pie',  full:false,sv:false,co:3,gd:function(){return xGroup(xFiltMain(),'ATEND',0,false);}},
+  {id:'cidade', title:'Top 10 Cidades de Execução',   type:'barh', full:true, sv:true, co:1,gd:function(){return xGroup(xFiltMain(),'CIDADE',10,false);}},
+  {id:'codigo', title:'Top 15 Códigos de Item',       type:'barh', full:true, sv:true, co:5,gd:function(){return xGroup(xFiltCodes(),'CODIGO',15,false);}},
+  {id:'faixa',  title:'Distribuição por Faixa Etária',type:'bar',  full:false,sv:true, co:2,gd:function(){return xGroupFaixa(xFiltMain());}}
+];
+
+/* ── plotly render ── */
+function xGetLAY(){
+  var L=document.documentElement.getAttribute('data-theme')==='light';
+  var fc=L?'#1a2535':'#e2e8f0',gc=L?'#d1dce8':'#1e2d45',hb=L?'#ffffff':'#111827';
+  return{paper_bgcolor:'transparent',plot_bgcolor:'transparent',
+    font:{family:'Sora,sans-serif',color:fc,size:12},margin:{t:10,r:20,b:50,l:50},
+    xaxis:{gridcolor:gc,linecolor:gc,tickfont:{size:11}},
+    yaxis:{gridcolor:gc,linecolor:gc,tickfont:{size:11}},
+    legend:{bgcolor:'transparent',font:{size:11}},
+    hoverlabel:{bgcolor:hb,bordercolor:gc,font:{family:'Sora',size:12}}};}
+var XCFG={displaylogo:false,responsive:true,modeBarButtonsToRemove:['select2d','lasso2d','autoScale2d']};
+function xLay(e){var b=xGetLAY();for(var k in e)b[k]=e[k];return b;}
+
+function xRender(el,type,sv,co,data){
+  var labels=data.labels,values=data.values;
+  if(!labels||!labels.length){el.innerHTML='<div class="no-data">Sem dados</div>';return;}
+  var colors=labels.map(function(_,i){return xCol(i+co);});
+  var isH=type==='barh',isPie=type==='pie'||type==='donut',isLine=type==='line';
+  var traces,layout,L=xGetLAY();
+  Plotly.purge(el);el.innerHTML='';
+  if(isPie){
+    traces=[{type:'pie',labels:labels,values:values,marker:{colors:colors},hole:type==='donut'?.4:0,
+      textinfo:sv?'label+value+percent':'label+percent',
+      hovertemplate:'<b>%{label}</b><br>%{value:,} (%{percent})<extra></extra>',textfont:{size:11}}];
+    layout=xLay({showlegend:true,legend:{orientation:'v',x:1.02,y:.5,font:{size:10}},margin:{t:10,r:130,b:20,l:20}});
+  }else if(isH){
+    var lr=labels.slice().reverse(),vr=values.slice().reverse(),cr=colors.slice().reverse();
+    traces=[{type:'bar',orientation:'h',x:vr,y:lr,marker:{color:cr},
+      text:sv?vr.map(function(v){return v.toLocaleString('pt-BR');}):undefined,
+      textposition:sv?'auto':'none',textfont:{size:10},
+      hovertemplate:'<b>%{y}</b><br>%{x:,}<extra></extra>'}];
+    layout=xLay({margin:{t:10,r:20,b:40,l:210},yaxis:Object.assign({},L.yaxis,{automargin:true,tickfont:{size:10}})});
+  }else if(isLine){
+    traces=[{type:'scatter',mode:sv?'lines+markers+text':'lines+markers',x:labels,y:values,
+      fill:'tozeroy',fillcolor:'rgba(0,198,255,.12)',line:{color:'#00c6ff',width:2.5},
+      marker:{size:5,color:'#00c6ff'},
+      text:sv?values.map(function(v){return v.toLocaleString('pt-BR');}):undefined,
+      textposition:'top center',textfont:{size:10},
+      hovertemplate:'<b>%{x}</b><br>%{y:,}<extra></extra>'}];
+    layout=xLay({margin:{t:20,r:20,b:60,l:70}});
+  }else{
+    traces=[{type:'bar',x:labels,y:values,marker:{color:colors,opacity:.85},
+      text:sv?values.map(function(v){return v.toLocaleString('pt-BR');}):undefined,
+      textposition:sv?'auto':'none',textfont:{size:10},
+      hovertemplate:'<b>%{x}</b><br>%{y:,}<extra></extra>'}];
+    layout=xLay({bargap:.25,margin:{t:10,r:20,b:70,l:60},xaxis:Object.assign({},L.xaxis,{type:'category'})});
+  }
+  Plotly.newPlot(el,traces,layout,XCFG);
+}
+
+/* ── update all ── */
+function xUpdateAll(){
+  var f=xFiltMain(),total=f.reduce(function(s,r){return s+r.QTD;},0);
+  var sadt=0,consulta=0,internacao=0,outros=0;
+  var tg=xGroup(f,'TIPO',0,false);
+  tg.labels.forEach(function(l,i){
+    var k=l.toUpperCase(),v=tg.values[i];
+    if(k.indexOf('SADT')>=0)sadt+=v;
+    else if(k.indexOf('CONSUL')>=0)consulta+=v;
+    else if(k.indexOf('INTERN')>=0)internacao+=v;
+    else outros+=v;
+  });
+  document.getElementById('xkTotal').textContent=xFmt(total);
+  document.getElementById('xkSADT').textContent=xFmt(sadt);
+  document.getElementById('xkSADTp').textContent=xPct(sadt,total);
+  document.getElementById('xkConsulta').textContent=xFmt(consulta);
+  document.getElementById('xkConsultap').textContent=xPct(consulta,total);
+  document.getElementById('xkInternacao').textContent=xFmt(internacao);
+  document.getElementById('xkInternacaop').textContent=xPct(internacao,total);
+  document.getElementById('xkOutros').textContent=xFmt(outros);
+  document.getElementById('xkOutrosp').textContent=xPct(outros,total);
+  SPECS.forEach(function(sp){
+    var el=document.getElementById('xc-'+sp.id);
+    if(el)xRender(el,sp.type,sp.sv,sp.co,sp.gd());
+  });
+}
+
+/* ── dropdown helpers ── */
+function xToggleDd(key){
+  var panel=document.getElementById('xpanel-'+key);
+  var wasOpen=panel.classList.contains('open');
+  document.querySelectorAll('.xdd-panel').forEach(function(p){p.classList.remove('open');});
+  if(!wasOpen)panel.classList.add('open');
+}
+document.addEventListener('click',function(e){
+  if(!e.target.closest('.xdd'))document.querySelectorAll('.xdd-panel').forEach(function(p){p.classList.remove('open');});
+});
+function xBuildPanel(key){
+  var fmap={tipo:'TIPO',atend:'ATEND',cidade:'CIDADE',faixa:'FAIXA',codigo:'CODIGO'};
+  var g;
+  if(key==='faixa'){
+    var seen={};CUBE.forEach(function(r){seen[r.FAIXA]=1;});
+    g={labels:FAIXA_ORD.filter(function(k){return k in seen;}),values:[]};
+  }else if(key==='codigo'){
+    g=xGroup(CODES,'CODIGO',200,false);
+  }else{
+    g=xGroup(CUBE,fmap[key],100,false);
+  }
+  var st=XS[key];
+  var panel=document.getElementById('xpanel-'+key);
+  panel.innerHTML=g.labels.map(function(v){
+    var esc=v.replace(/&/g,'&amp;').replace(/"/g,'&quot;');
+    var chk=st.has(v)?' checked':'';
+    return '<label class="xdd-item"><input type="checkbox" data-key="'+key+'" value="'+esc+'"'+chk+' onchange="xOnDd(this.dataset.key,this.value,this.checked)"><span>'+v+'</span></label>';
+  }).join('');
+}
+function xOnDd(key,val,checked){
+  if(checked)XS[key].add(val);else XS[key].delete(val);
+  var badge=document.getElementById('xbadge-'+key),n=XS[key].size;
+  badge.textContent=n||'';badge.style.display=n?'':'none';
+  xUpdateAll();
+}
+function xOnDate(){
+  XS.mesFrom=document.getElementById('xFrom').value;
+  XS.mesTo=document.getElementById('xTo').value;
+  xUpdateAll();
+}
+function xClear(){
+  XS.mesFrom='';XS.mesTo='';
+  XS.tipo.clear();XS.atend.clear();XS.cidade.clear();XS.faixa.clear();XS.codigo.clear();
+  document.getElementById('xFrom').value='';
+  document.getElementById('xTo').value='';
+  ['tipo','atend','cidade','faixa','codigo'].forEach(function(k){
+    var b=document.getElementById('xbadge-'+k);b.textContent='';b.style.display='none';
+    xBuildPanel(k);
+  });
+  xUpdateAll();
+}
+function xToggleTheme(){
+  var L=document.documentElement.getAttribute('data-theme')==='light';
+  document.documentElement.setAttribute('data-theme',L?'':'light');
+  document.getElementById('themeBtn').textContent=L?'☀️':'🌙';
+  xUpdateAll();
+  DYN.forEach(function(def){
+    var el=document.getElementById('xc-d-'+def.id);
+    if(el)xRender(el,def.type,def.showValues,def.colorOffset||0,{labels:def.labels,values:def.values});
+  });
+}
+
+/* ── init ── */
+// Script está ao fim do body — DOM já está pronto, sem precisar de DOMContentLoaded
+(function xInit(){
+  var grid=document.getElementById('chartsGrid');
+  if(!grid){setTimeout(xInit,50);return;}
+  SPECS.forEach(function(sp){
+    var d=document.createElement('div');
+    d.className='chart-card'+(sp.full?' full':'');
+    d.innerHTML='<div class="card-header"><span class="card-title">'+sp.title+'</span></div>'
+      +'<div class="chart-body"><div class="chart-wrap" id="xc-'+sp.id+'" style="height:290px"></div></div>';
+    grid.appendChild(d);
+  });
+  DYN.forEach(function(def){
+    var d=document.createElement('div');
+    d.className='chart-card'+(def.full?' full':'');
+    d.innerHTML='<div class="card-header"><span class="card-title">'+def.title+'<span class="snap-badge">(snapshot)</span></span></div>'
+      +'<div class="chart-body"><div class="chart-wrap" id="xc-d-'+def.id+'" style="height:290px"></div></div>';
+    grid.appendChild(d);
+    var el=document.getElementById('xc-d-'+def.id);
+    xRender(el,def.type,def.showValues,def.colorOffset||0,{labels:def.labels,values:def.values});
+  });
+  ['tipo','atend','cidade','faixa','codigo'].forEach(function(k){xBuildPanel(k);});
+  xUpdateAll();
+}());
+<\/script>
+</body>
+</html>`;
+}
+
+/* ── AUTO-REFRESH ───────────────────────────────────────── */
+let _autoRefreshTimer = null;
+function setAutoRefresh(seconds) {
+  clearInterval(_autoRefreshTimer);
+  _autoRefreshTimer = null;
+  const s = parseInt(seconds);
+  if (s > 0) _autoRefreshTimer = setInterval(loadData, s * 1000);
+}
+
+/* ── TEMA ───────────────────────────────────────────────── */
+function toggleTheme() {
+  const isLight = document.documentElement.getAttribute("data-theme") === "light";
+  const next = isLight ? "dark" : "light";
+  applyTheme(next);
+  localStorage.setItem("dash-theme", next);
+}
+
+function applyTheme(theme) {
+  const isLight = theme === "light";
+  document.documentElement.setAttribute("data-theme", isLight ? "light" : "");
+  document.getElementById("themeBtn").textContent = isLight ? "🌙" : "☀️";
+
+  // Atualiza todos os gráficos Plotly para o tema correto
+  const fontColor = isLight ? "#1a2535" : "#e2e8f0";
+  const gridColor = isLight ? "#d1dce8" : "#1e2d45";
+  const bgColor   = "transparent";
+  document.querySelectorAll("[id^='chart-']").forEach(el => {
+    if (el.data) {
+      Plotly.relayout(el, {
+        paper_bgcolor: bgColor, plot_bgcolor: bgColor,
+        font: {color: fontColor},
+        xaxis: {gridcolor: gridColor, linecolor: gridColor},
+        yaxis: {gridcolor: gridColor, linecolor: gridColor},
+      });
+    }
+  });
+}
+
+/* ── INIT ───────────────────────────────────────────────── */
+(function initFilters(){
+  const now=new Date();
+  const from=new Date(now.getFullYear(),now.getMonth()-11,1);
+  const pad=n=>String(n).padStart(2,"0");
+  document.getElementById("dateFrom").value=`${from.getFullYear()}-${pad(from.getMonth()+1)}`;
+  document.getElementById("dateTo").value=`${now.getFullYear()}-${pad(now.getMonth()+1)}`;
+})();
+
+// Aplica tema salvo
+applyTheme(localStorage.getItem("dash-theme") || "dark");
+
+// Inicializa estado dos filtros
+FILTER_COLS.forEach(fd=>{filterState[fd.col]={loaded:false,selected:new Set()};});
+
+loadData();
+</script>
+</body>
+</html>

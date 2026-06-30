@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Login — Dashboard de Autorizações</title>
+<link rel="icon" href="data:,">
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0a0e1a;--surface:#111827;--border:#1e2d45;
+  --accent:#00c6ff;--text:#e2e8f0;--muted:#64748b;--danger:#ef4444;
+}
+body{background:var(--bg);color:var(--text);font-family:'Sora',sans-serif;
+  min-height:100vh;display:flex;align-items:center;justify-content:center;}
+
+.card{
+  background:var(--surface);border:1px solid var(--border);border-radius:16px;
+  padding:40px 36px;width:100%;max-width:380px;
+  box-shadow:0 8px 40px rgba(0,198,255,.07);
+}
+.logo{
+  text-align:center;margin-bottom:28px;
+}
+.logo-title{
+  font-size:20px;font-weight:700;color:var(--accent);letter-spacing:.5px;
+}
+.logo-sub{
+  font-size:11px;color:var(--muted);margin-top:4px;text-transform:uppercase;letter-spacing:.8px;
+}
+
+label{display:block;font-size:11px;color:var(--muted);text-transform:uppercase;
+  letter-spacing:.5px;margin-bottom:6px;margin-top:18px;}
+input{
+  width:100%;background:var(--bg);border:1px solid var(--border);border-radius:8px;
+  padding:11px 14px;color:var(--text);font-size:14px;font-family:'Sora',sans-serif;
+  outline:none;transition:border-color .2s;
+}
+input:focus{border-color:var(--accent);}
+
+.btn{
+  width:100%;margin-top:26px;padding:12px;background:var(--accent);color:#0a0e1a;
+  border:none;border-radius:8px;font-size:14px;font-weight:700;font-family:'Sora',sans-serif;
+  cursor:pointer;letter-spacing:.3px;transition:opacity .2s;
+}
+.btn:hover{opacity:.85;}
+.btn:disabled{opacity:.5;cursor:default;}
+
+.error{
+  margin-top:14px;padding:10px 14px;background:rgba(239,68,68,.1);
+  border:1px solid rgba(239,68,68,.3);border-radius:8px;
+  color:var(--danger);font-size:12px;display:none;
+}
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="logo">
+    <div class="logo-title">Dashboard de Autorizações</div>
+    <div class="logo-sub">Acesso restrito</div>
+  </div>
+
+  <label for="user">Usuário</label>
+  <input type="text" id="user" placeholder="Digite seu usuário" autocomplete="username">
+
+  <label for="pass">Senha</label>
+  <input type="password" id="pass" placeholder="Digite sua senha" autocomplete="current-password">
+
+  <button class="btn" id="btn" onclick="doLogin()">Entrar</button>
+  <div class="error" id="err"></div>
+</div>
+
+<script>
+const API = window.location.origin;
+
+document.getElementById("pass").addEventListener("keydown", e => {
+  if (e.key === "Enter") doLogin();
+});
+document.getElementById("user").addEventListener("keydown", e => {
+  if (e.key === "Enter") document.getElementById("pass").focus();
+});
+
+async function doLogin() {
+  const btn  = document.getElementById("btn");
+  const err  = document.getElementById("err");
+  const user = document.getElementById("user").value.trim();
+  const pass = document.getElementById("pass").value;
+
+  err.style.display = "none";
+  if (!user || !pass) { showErr("Preencha usuário e senha."); return; }
+
+  btn.disabled = true;
+  btn.textContent = "Entrando...";
+
+  try {
+    const r = await fetch(`${API}/api/login`, {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({user, pass})
+    });
+    const d = await r.json();
+    if (d.success) {
+      sessionStorage.setItem("auth_token", d.token);
+      window.location.href = "/dashboard";
+    } else {
+      showErr(d.error || "Usuário ou senha incorretos.");
+    }
+  } catch(e) {
+    showErr("Erro ao conectar com o servidor.");
+  } finally {
+    btn.disabled = false;
+    btn.textContent = "Entrar";
+  }
+}
+
+function showErr(msg) {
+  const err = document.getElementById("err");
+  err.textContent = msg;
+  err.style.display = "block";
+}
+</script>
+</body>
+</html>

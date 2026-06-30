@@ -1,0 +1,171 @@
+INFO:     Started server process [56768]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://0.0.0.0:3002 (Press CTRL+C to quit)
+[OK] Pool async criado — benner_saude.vw_autorizacao_geral
+INFO:     127.0.0.1:56567 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56569 - "GET /api/kpis HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56574 - "GET /api/chart/mes HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56575 - "GET /api/chart/tipo HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56576 - "GET /api/chart/cidade HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56577 - "GET /api/chart/faixa HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56200 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62038 - "GET /docs HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62038 - "GET /openapi.json HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61111 - "GET /api/kpis HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55338 - "GET /api/chart/mes HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55340 - "GET /api/chart/tipo HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55354 - "GET /api/kpis?dateFrom=2025-03&dateTo=2026-03 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55356 - "GET /api/chart/mes?dateFrom=2025-03&dateTo=2026-03 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62868 - "GET /api/chart/faixa?dateFrom=2025-03&dateTo=2026-03 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62870 - "GET /api/chart/cidade?dateFrom=2025-03&dateTo=2026-03 HTTP/1.1" 200 OK
+INFO:     Started server process [61188]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://0.0.0.0:3002 (Press CTRL+C to quit)
+[OK] Pool async criado — benner_saude.vw_autorizacao_geral
+INFO:     127.0.0.1:61056 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61058 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     Started server process [54012]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://0.0.0.0:3002 (Press CTRL+C to quit)
+[OK] Pool async criado — benner_saude.vw_autorizacao_geral
+INFO:     127.0.0.1:51840 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51842 - "GET /plotly.min.js HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55541 - "GET /api/kpis HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55541 - "GET /api/schema HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55541 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55541 - "GET /api/kpis HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60562 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     Started server process [6868]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://0.0.0.0:3002 (Press CTRL+C to quit)
+[OK] Pool async criado — benner_saude.vw_autorizacao_geral
+INFO:     127.0.0.1:64144 - "GET /api/kpis HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64147 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64149 - "HEAD /api/kpis HTTP/1.1" 405 Method Not Allowed
+INFO:     127.0.0.1:53306 - "GET / HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53306 - "GET /plotly.min.js HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64729 - "GET / HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64729 - "GET /plotly.min.js HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64729 - "GET /favicon.ico HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:55597 - "GET / HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64724 - "GET / HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64724 - "GET /plotly.min.js HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64724 - "GET /favicon.ico HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:64724 - "GET / HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64724 - "GET /plotly.min.js HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64724 - "GET /favicon.ico HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:64724 - "GET / HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64724 - "GET /plotly.min.js HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64724 - "GET /favicon.ico HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:64724 - "GET / HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64724 - "GET /plotly.min.js HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64724 - "GET /favicon.ico HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:64724 - "GET / HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64724 - "GET /plotly.min.js HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64724 - "GET /favicon.ico HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:64724 - "GET / HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64724 - "GET /plotly.min.js HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64724 - "GET /favicon.ico HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:64724 - "GET / HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64724 - "GET /plotly.min.js HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64724 - "GET / HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64724 - "GET /plotly.min.js HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64724 - "GET / HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64724 - "GET /plotly.min.js HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64724 - "GET / HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64724 - "GET /plotly.min.js HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64724 - "GET / HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64724 - "GET /plotly.min.js HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64724 - "GET /favicon.ico HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:64724 - "GET / HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64724 - "GET /plotly.min.js HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64724 - "GET /favicon.ico HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:64724 - "GET / HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64724 - "GET /plotly.min.js HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64724 - "GET /favicon.ico HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:64724 - "GET / HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64724 - "GET /plotly.min.js HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64724 - "GET /favicon.ico HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:64724 - "GET / HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64724 - "GET /plotly.min.js HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64724 - "GET /favicon.ico HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:64724 - "GET / HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64724 - "GET /plotly.min.js HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64724 - "GET /favicon.ico HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:64724 - "GET / HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64724 - "GET /plotly.min.js HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64724 - "GET /favicon.ico HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:62827 - "GET / HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62827 - "GET / HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62827 - "GET / HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62827 - "GET /plotly.min.js HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62827 - "GET /favicon.ico HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:62827 - "GET / HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62827 - "GET /plotly.min.js HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62827 - "GET /favicon.ico HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:62827 - "GET / HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62827 - "GET /plotly.min.js HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62827 - "GET /favicon.ico HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:62827 - "GET / HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62827 - "GET /plotly.min.js HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62827 - "GET /favicon.ico HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:62827 - "GET / HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62827 - "GET /plotly.min.js HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62827 - "GET / HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62827 - "GET /plotly.min.js HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62827 - "GET / HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62827 - "GET /plotly.min.js HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62827 - "GET /favicon.ico HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:63159 - "GET /plotly.min.js HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62524 - "GET / HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50064 - "GET / HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50064 - "GET / HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50064 - "GET /plotly.min.js HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50064 - "GET /favicon.ico HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:50064 - "GET / HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50064 - "GET /plotly.min.js HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50064 - "GET /favicon.ico HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:50064 - "GET / HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50064 - "GET /plotly.min.js HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50064 - "GET / HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50064 - "GET /plotly.min.js HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50064 - "GET /favicon.ico HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:59410 - "GET / HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59410 - "GET /plotly.min.js HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59410 - "GET /favicon.ico HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:59410 - "GET / HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59410 - "GET /plotly.min.js HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59410 - "GET /favicon.ico HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:59410 - "GET / HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59410 - "GET /plotly.min.js HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59410 - "GET /favicon.ico HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:59410 - "GET / HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59410 - "GET /plotly.min.js HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59410 - "GET / HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59410 - "GET /plotly.min.js HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59410 - "GET / HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59410 - "GET /plotly.min.js HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59410 - "GET / HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59410 - "GET /plotly.min.js HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59410 - "GET /favicon.ico HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:59410 - "GET / HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59410 - "GET /plotly.min.js HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59410 - "GET /favicon.ico HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:59410 - "GET / HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59410 - "GET /plotly.min.js HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59410 - "GET /favicon.ico HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:59410 - "GET / HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59410 - "GET /plotly.min.js HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59410 - "GET /favicon.ico HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:59410 - "GET / HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59410 - "GET /plotly.min.js HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59410 - "GET / HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59410 - "GET /plotly.min.js HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59410 - "GET /favicon.ico HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:59410 - "GET / HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59410 - "GET /plotly.min.js HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59410 - "GET /favicon.ico HTTP/1.1" 404 Not Found
