@@ -460,7 +460,7 @@ async function loadData(isRefresh=false) {
     const isFirstLoad = !document.querySelector('.ms-wrap');
     if (isFirstLoad) {
       buildFilterBar();
-      if (!loadUserCharts()) initDefaultCharts(); else renderGrid();
+      if (!(await loadUserCharts())) initDefaultCharts(); else renderGrid();
     } else {
       // Atualiza contagens e opções dos filtros sem destruir seleções do usuário
       const novos = [];
@@ -556,18 +556,21 @@ function identifyUser() {
 
 function saveCharts() {
   if (!CURRENT_USER) return;
-  localStorage.setItem('proto_charts_' + CURRENT_USER, JSON.stringify(chartRegistry));
+  fetch('/api/charts/' + CURRENT_USER, {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({charts: chartRegistry})
+  }).catch(() => {});
 }
 
-function loadUserCharts() {
+async function loadUserCharts() {
   if (!CURRENT_USER) return false;
-  const saved = localStorage.getItem('proto_charts_' + CURRENT_USER);
-  if (!saved) return false;
   try {
-    const loaded = JSON.parse(saved);
-    if (!Array.isArray(loaded) || !loaded.length) return false;
-    chartRegistry = loaded;
-    loaded.forEach(c => {
+    const res = await fetch('/api/charts/' + CURRENT_USER);
+    const data = await res.json();
+    if (!data.charts || !Array.isArray(data.charts) || !data.charts.length) return false;
+    chartRegistry = data.charts;
+    data.charts.forEach(c => {
       const n = parseInt(c.id.replace('c', ''));
       if (!isNaN(n) && n > chartIdCounter) chartIdCounter = n;
     });

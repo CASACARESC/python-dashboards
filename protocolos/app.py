@@ -6,6 +6,8 @@ from flask import Flask, jsonify, request, send_from_directory
 from flask_cors import CORS
 import oracledb
 import os
+import json
+import re
 from dotenv import load_dotenv
 
 load_dotenv(os.path.join(os.path.dirname(__file__), ".env"))
@@ -23,6 +25,16 @@ DB_CONFIG = {
 
 # Nome da view no Oracle
 VIEW_NAME = os.getenv("VIEW_NAME", "VW_PROTOCOLO_DASHBOARD")
+
+# Diretório para salvar gráficos por usuário
+CHARTS_DIR = os.path.join(os.path.dirname(__file__), "charts")
+os.makedirs(CHARTS_DIR, exist_ok=True)
+
+
+def _safe_user(name: str):
+    """Sanitiza o nome do usuário para uso como nome de arquivo."""
+    clean = re.sub(r"[^a-z0-9._-]", "", name.lower())[:64]
+    return clean if clean else None
 
 # ── HELPER — conexão ─────────────────────────────────────
 def get_conn():
@@ -98,6 +110,33 @@ def get_protocolos():
 
     except Exception as e:
         return jsonify({"success": False, "error": str(e)}), 500
+
+
+# ── GRÁFICOS POR USUÁRIO ─────────────────────────────────
+@app.route("/api/charts/<user>", methods=["GET"])
+def get_charts(user):
+    safe = _safe_user(user)
+    if not safe:
+        return jsonify({"charts": None}), 200
+    path = os.path.join(CHARTS_DIR, safe + ".json")
+    if not os.path.exists(path):
+        return jsonify({"charts": None}), 200
+    with open(path, encoding="utf-8") as f:
+        return jsonify({"charts": json.load(f)}), 200
+
+
+@app.route("/api/charts/<user>", methods=["POST"])
+def save_charts(user):
+    safe = _safe_user(user)
+    if not safe:
+        return jsonify({"ok": False, "error": "nome inválido"}), 400
+    data = request.get_json(silent=True)
+    if data is None or "charts" not in data:
+        return jsonify({"ok": False, "error": "payload inválido"}), 400
+    path = os.path.join(CHARTS_DIR, safe + ".json")
+    with open(path, "w", encoding="utf-8") as f:
+        json.dump(data["charts"], f, ensure_ascii=False)
+    return jsonify({"ok": True}), 200
 
 
 # ── HEALTHCHECK ──────────────────────────────────────────

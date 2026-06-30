@@ -16,3 +16,6 @@ build/
 # Arquivos gerados (versão estática)
 dados_raw.json
 dashboard_estatico.html
+
+# Gráficos salvos por usuário (gerados em runtime)
+charts/
