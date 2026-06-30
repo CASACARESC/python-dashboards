@@ -190,6 +190,8 @@ footer{text-align:center;padding:16px;color:var(--muted);font-size:11px;border-t
 @media(max-width:700px){.kpi-grid{grid-template-columns:repeat(2,1fr)}}
 @keyframes fadeUp{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
 .kpi-card,.chart-card{animation:fadeUp .4s ease both}
+.user-modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:1100;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(6px)}
+.user-modal-overlay.hidden{display:none}
 .toast{position:fixed;bottom:24px;right:24px;background:rgba(0,198,255,.12);border:1px solid rgba(0,198,255,.35);color:var(--accent);padding:10px 16px;border-radius:8px;font-size:12px;z-index:9999;animation:toastIn .3s ease;pointer-events:none;max-width:360px}
 .toast.out{animation:toastOut .3s ease forwards}
 @keyframes toastIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
@@ -238,6 +240,7 @@ footer{text-align:center;padding:16px;color:var(--muted);font-size:11px;border-t
   <button class="btn-refresh" id="btnVerSql" onclick="openSqlModal()" style="border-color:rgba(16,185,129,.3);color:var(--accent4)" disabled>
     🗄️ Ver SQL
   </button>
+  <span id="userBadge" onclick="changeUser()" title="Trocar usuário" style="margin-left:auto;font-size:11px;color:var(--muted);cursor:pointer;padding:3px 10px;border:1px solid var(--border);border-radius:6px;display:flex;align-items:center;gap:5px;transition:border-color .2s,color .2s" onmouseenter="this.style.color='var(--text)'" onmouseleave="this.style.color='var(--muted)'">👤 <span id="userDisplay">—</span></span>
 </div>
 
 <!-- MODAL SQL -->
@@ -457,7 +460,7 @@ async function loadData(isRefresh=false) {
     const isFirstLoad = !document.querySelector('.ms-wrap');
     if (isFirstLoad) {
       buildFilterBar();
-      initDefaultCharts();
+      if (!loadUserCharts()) initDefaultCharts(); else renderGrid();
     } else {
       // Atualiza contagens e opções dos filtros sem destruir seleções do usuário
       const novos = [];
@@ -523,6 +526,64 @@ function showToast(msg) {
   t.textContent = msg;
   document.body.appendChild(t);
   setTimeout(() => { t.classList.add('out'); setTimeout(() => t.remove(), 300); }, 4500);
+}
+
+// ═══════════════════════════════════════════════════════
+// USUÁRIO / PERSISTÊNCIA DE GRÁFICOS
+// ═══════════════════════════════════════════════════════
+let CURRENT_USER = null;
+
+function identifyUser() {
+  return new Promise(resolve => {
+    const stored = localStorage.getItem('proto_user');
+    if (stored) { CURRENT_USER = stored; resolve(); return; }
+    const modal = document.getElementById('userModal');
+    modal.classList.remove('hidden');
+    const input = document.getElementById('userNameInput');
+    setTimeout(() => input.focus(), 100);
+    const confirm = () => {
+      const name = input.value.trim();
+      if (!name) { input.focus(); return; }
+      CURRENT_USER = name.toLowerCase().replace(/\s+/g, '.');
+      localStorage.setItem('proto_user', CURRENT_USER);
+      modal.classList.add('hidden');
+      resolve();
+    };
+    document.getElementById('userConfirmBtn').addEventListener('click', confirm, {once: true});
+    input.addEventListener('keydown', e => { if (e.key === 'Enter') confirm(); });
+  });
+}
+
+function saveCharts() {
+  if (!CURRENT_USER) return;
+  localStorage.setItem('proto_charts_' + CURRENT_USER, JSON.stringify(chartRegistry));
+}
+
+function loadUserCharts() {
+  if (!CURRENT_USER) return false;
+  const saved = localStorage.getItem('proto_charts_' + CURRENT_USER);
+  if (!saved) return false;
+  try {
+    const loaded = JSON.parse(saved);
+    if (!Array.isArray(loaded) || !loaded.length) return false;
+    chartRegistry = loaded;
+    loaded.forEach(c => {
+      const n = parseInt(c.id.replace('c', ''));
+      if (!isNaN(n) && n > chartIdCounter) chartIdCounter = n;
+    });
+    return true;
+  } catch { return false; }
+}
+
+function showUserBadge() {
+  const el = document.getElementById('userDisplay');
+  if (el) el.textContent = CURRENT_USER || '—';
+}
+
+function changeUser() {
+  if (!confirm('Trocar de usuário? Você perderá os gráficos não salvos.')) return;
+  localStorage.removeItem('proto_user');
+  location.reload();
 }
 
 // ═══════════════════════════════════════════════════════
@@ -829,6 +890,7 @@ function initDefaultCharts(){
     {id:cid(),title:'Volume por Tipo (Mensal)',field:'TBTIPOPROTOCOLO',type:'stackedBar',wide:true,showValues:false,series:[mkSeries('Stacked','TBTIPOPROTOCOLO',null,null)]},
   ];
   renderGrid();
+  saveCharts();
 }
 function cid(){return 'c'+(++chartIdCounter);}
 function mkSeries(label,dim,val,color){return{id:'s'+Date.now()+Math.random(),label,dim,val,color:color||PALETTE[0]};}
@@ -920,7 +982,7 @@ function updateChips(cfg){
   const strip=document.getElementById('chips_'+cfg.id);if(!strip) return;strip.innerHTML='';if(cfg.series.length<=1) return;
   cfg.series.forEach(sr=>{const chip=document.createElement('div');chip.className='series-chip';chip.style.cssText='border-color:'+sr.color+'44;color:'+sr.color+';background:'+sr.color+'11';const dot=document.createElement('span');dot.style.cssText='width:6px;height:6px;border-radius:50%;background:'+sr.color+';flex-shrink:0';const lbl=document.createElement('span');lbl.textContent=sr.label;chip.append(dot,lbl);if(sr.id!==cfg.series[0].id){const btn=document.createElement('button');btn.textContent='×';btn.style.color=sr.color;btn.addEventListener('click',()=>{cfg.series=cfg.series.filter(s=>s.id!==sr.id);drawChart(cfg);});chip.appendChild(btn);}strip.appendChild(chip);});
 }
-function removeChart(id){const cid='canvas_'+id;if(charts[cid]){charts[cid].destroy();delete charts[cid];}chartRegistry=chartRegistry.filter(c=>c.id!==id);const card=document.getElementById('card_'+id);if(card) card.remove();}
+function removeChart(id){const cid='canvas_'+id;if(charts[cid]){charts[cid].destroy();delete charts[cid];}chartRegistry=chartRegistry.filter(c=>c.id!==id);const card=document.getElementById('card_'+id);if(card) card.remove();saveCharts();}
 function getMonths(timeField='INICIADOEM_STR'){const m={};filteredData.forEach(r=>{if(r[timeField]) m[r[timeField]]=1;});return Object.keys(m).sort().slice(-24);}
 function getTimeSeriesData(sr,months,timeField='INICIADOEM_STR'){const subset=(sr.dim&&sr.val)?filteredData.filter(r=>r[sr.dim]===sr.val):filteredData;const map={};months.forEach(m=>map[m]=0);subset.forEach(r=>{if(r[timeField]&&map.hasOwnProperty(r[timeField])) map[r[timeField]]++;});return months.map(m=>map[m]);}
 
@@ -941,7 +1003,7 @@ document.getElementById('asConfirmBtn').addEventListener('click',()=>{
   const cfg=chartRegistry.find(c=>c.id===_addSeriesTargetId);if(!cfg) return;
   const dim=document.getElementById('asDim').value,val=document.getElementById('asVal').value;if(!val) return;
   cfg.series.push({id:'s'+Date.now(),label:val,dim,val,color:PALETTE[cfg.series.length%PALETTE.length]});
-  document.getElementById('addSeriesModal').classList.add('hidden');drawChart(cfg);
+  document.getElementById('addSeriesModal').classList.add('hidden');drawChart(cfg);saveCharts();
 });
 let _selChartType='barH';
 function openNewChartModal(){
@@ -960,7 +1022,7 @@ document.getElementById('ncConfirmBtn').addEventListener('click',()=>{
   const timeField=(isTime&&dimDef?.isTime)?field:'INICIADOEM_STR';
   const chartField=isTime?timeField:field;
   const cfg={id:cid(),title,field:chartField,type,wide,showValues:false,series:[isTime?{id:'s'+Date.now(),label:'Total Geral',dim:null,val:null,color:PALETTE[0]}:mkSeries(dimDef?.label||field,null,null,PALETTE[0])]};
-  chartRegistry.push(cfg);const grid=document.getElementById('chartsGrid');const card=buildChartCard(cfg);grid.appendChild(card);drawChart(cfg);document.getElementById('addChartModal').classList.add('hidden');
+  chartRegistry.push(cfg);const grid=document.getElementById('chartsGrid');const card=buildChartCard(cfg);grid.appendChild(card);drawChart(cfg);document.getElementById('addChartModal').classList.add('hidden');saveCharts();
 });
 document.querySelectorAll('.modal-overlay').forEach(o=>o.addEventListener('click',e=>{if(e.target===o) o.classList.add('hidden');}));
 
@@ -976,7 +1038,22 @@ function mkDiv(cls){const d=document.createElement('div');d.className=cls;return
 // ═══════════════════════════════════════════════════════
 // INIT
 // ═══════════════════════════════════════════════════════
-window.addEventListener('load', ()=>loadData());
+window.addEventListener('load', async () => { await identifyUser(); showUserBadge(); loadData(); });
 </script>
+
+<!-- MODAL: Identificação do Usuário -->
+<div class="user-modal-overlay" id="userModal">
+  <div class="modal" style="max-width:360px;text-align:center">
+    <div style="font-size:36px;margin-bottom:8px">👤</div>
+    <h3 style="margin-bottom:8px">Identificação</h3>
+    <p style="font-size:12px;color:var(--muted);margin-bottom:20px;line-height:1.6">Seus gráficos são salvos por usuário.<br>Digite seu nome para carregar sua configuração.</p>
+    <div class="modal-field">
+      <input type="text" id="userNameInput" placeholder="Seu nome ou login" autocomplete="off" style="text-align:center;font-size:14px">
+    </div>
+    <div class="modal-actions" style="justify-content:center;margin-top:16px">
+      <button class="btn-primary" id="userConfirmBtn" style="min-width:120px">Entrar</button>
+    </div>
+  </div>
+</div>
 </body>
 </html>
