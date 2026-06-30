@@ -9,15 +9,14 @@ import sys
 if sys.platform == "win32":
     asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
 
-from fastapi import FastAPI, Query, HTTPException, Request
+from fastapi import FastAPI, Query, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse, JSONResponse, RedirectResponse
+from fastapi.responses import FileResponse, RedirectResponse
 from contextlib import asynccontextmanager
 import oracledb
 import os
 import json
 import datetime
-import secrets
 from typing import Optional
 from dotenv import load_dotenv
 
@@ -26,9 +25,6 @@ load_dotenv(os.path.join(os.path.dirname(__file__), ".env"), override=True)
 DB_USER   = os.getenv("DB_USER")
 DB_PASS   = os.getenv("DB_PASS")
 DB_DSN    = os.getenv("DB_DSN")
-AUTH_USER = os.getenv("AUTH_USER", "admin")
-AUTH_PASS = os.getenv("AUTH_PASS", "admin")
-SESSION_TOKEN = secrets.token_hex(32)
 TABLE    = os.getenv("TABLE_NAME", "benner_saude.vw_autorizacao_geral")
 
 COL_DATE   = '"data solicita\u00e7\u00e3o"'
@@ -62,15 +58,6 @@ app.add_middleware(CORSMiddleware,
                    allow_methods=["GET", "POST"],
                    allow_headers=["*"])
 
-
-@app.middleware("http")
-async def auth_middleware(request: Request, call_next):
-    path = request.url.path
-    if path.startswith("/api/") and path != "/api/login":
-        token = request.headers.get("X-Token", "")
-        if token != SESSION_TOKEN:
-            return JSONResponse({"success": False, "error": "Não autorizado"}, status_code=401)
-    return await call_next(request)
 
 
 # ── HELPERS ───────────────────────────────────────────────
@@ -212,30 +199,17 @@ async def fetch_schema() -> dict:
 
 
 # ── STATIC FILES ──────────────────────────────────────────
-_DIR   = os.path.dirname(__file__)
-_HTML  = os.path.join(_DIR, "dashboard.html")
-_LOGIN = os.path.join(_DIR, "login.html")
+_DIR  = os.path.dirname(__file__)
+_HTML = os.path.join(_DIR, "dashboard.html")
 
 @app.get("/")
 async def index():
-    return RedirectResponse("/login")
-
-@app.get("/login")
-async def login_page():
-    return FileResponse(_LOGIN, media_type="text/html")
+    return RedirectResponse("/dashboard")
 
 @app.get("/dashboard")
 async def dashboard():
     return FileResponse(_HTML, media_type="text/html")
 
-
-# ── LOGIN ──────────────────────────────────────────────────
-@app.post("/api/login")
-async def api_login(request: Request):
-    body = await request.json()
-    if body.get("user") == AUTH_USER and body.get("pass") == AUTH_PASS:
-        return {"success": True, "token": SESSION_TOKEN}
-    return JSONResponse({"success": False, "error": "Usuário ou senha incorretos"}, status_code=401)
 
 @app.get("/plotly.min.js")
 async def plotly_js():
