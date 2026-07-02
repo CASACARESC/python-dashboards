@@ -353,7 +353,7 @@ footer{text-align:center;padding:16px;color:var(--muted);font-size:11px;border-t
 // CONFIGURAÇÃO DA API
 // ═══════════════════════════════════════════════════════
 let API_CFG = {
-  baseUrl:     '',               // vazio = mesmo servidor (URL relativa)
+  baseUrl:     '/dashboards/python/protocolos/proxy', // servido via proxy autenticado do Laravel
   path:        '/api/protocolos',
   autoRefresh: 10,               // minutos (0 = desativado)
   mode:        'api',            // 'api' ou 'demo'
@@ -532,9 +532,18 @@ function showToast(msg) {
 // USUÁRIO / PERSISTÊNCIA DE GRÁFICOS
 // ═══════════════════════════════════════════════════════
 let CURRENT_USER = null;
+let INTRANET_USER_LOCKED = false;
 
 function identifyUser() {
   return new Promise(resolve => {
+    const fromIntranet = new URLSearchParams(window.location.search).get('intranet_user');
+    if (fromIntranet) {
+      CURRENT_USER = fromIntranet.trim().toLowerCase().replace(/\s+/g, '.');
+      localStorage.setItem('proto_user', CURRENT_USER);
+      INTRANET_USER_LOCKED = true;
+      resolve();
+      return;
+    }
     const stored = localStorage.getItem('proto_user');
     if (stored) { CURRENT_USER = stored; resolve(); return; }
     const modal = document.getElementById('userModal');
@@ -556,7 +565,7 @@ function identifyUser() {
 
 function saveCharts() {
   if (!CURRENT_USER) return;
-  fetch('/api/charts/' + CURRENT_USER, {
+  fetch(API_CFG.baseUrl + '/api/charts/' + CURRENT_USER, {
     method: 'POST',
     headers: {'Content-Type': 'application/json'},
     body: JSON.stringify({charts: chartRegistry})
@@ -566,7 +575,7 @@ function saveCharts() {
 async function loadUserCharts() {
   if (!CURRENT_USER) return false;
   try {
-    const res = await fetch('/api/charts/' + CURRENT_USER);
+    const res = await fetch(API_CFG.baseUrl + '/api/charts/' + CURRENT_USER);
     const data = await res.json();
     if (!data.charts || !Array.isArray(data.charts) || !data.charts.length) return false;
     chartRegistry = data.charts;
@@ -584,6 +593,7 @@ function showUserBadge() {
 }
 
 function changeUser() {
+  if (INTRANET_USER_LOCKED) { showToast('Usuário definido automaticamente pelo login da intranet.'); return; }
   if (!confirm('Trocar de usuário? Você perderá os gráficos não salvos.')) return;
   localStorage.removeItem('proto_user');
   location.reload();
