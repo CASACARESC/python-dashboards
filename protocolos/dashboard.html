@@ -620,15 +620,10 @@ function showError(msg) {
   ov.innerHTML = `
     <div class="error-box">
       <div class="err-icon">⚠️</div>
-      <h3>Erro ao conectar à API</h3>
-      <p>${msg}<br><br>
-        Verifique se a API Python está rodando em<br>
-        <code>${API_CFG.baseUrl || window.location.origin}</code>
-      </p>
+      <h3>Não foi possível carregar o dashboard</h3>
+      <p>Tente novamente em alguns instantes. Se o problema continuar, entre em contato com o suporte de TI.</p>
       <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap">
         <button class="btn-retry" onclick="loadData()">🔄 Tentar novamente</button>
-        <button class="btn-retry" onclick="switchToDemo()" style="background:var(--accent3)">🧪 Usar dados demo</button>
-        <button class="btn-retry" onclick="openApiConfig()" style="background:var(--surface2);color:var(--text);border:1px solid var(--border)">⚙️ Configurar API</button>
       </div>
     </div>`;
 }
